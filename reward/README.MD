@@ -1,4 +1,4 @@
-
+## 状态测试中...
 
 
 ## 1.数据示例
@@ -22,13 +22,7 @@
          "note": "Unclear what happened."
        }
      ],
-     "choice": 1,
-     "worker": "ikNmucwunMnYJCQpnq6ZYb57OW7NiD",
-     "batch": "batch9",
-     "split": "train",
-     "extra": {
-       "confidence": 8
-     }
+     "choice": 1
    }
 
 
@@ -51,10 +45,6 @@
 
 
 
-   
-
-![inference](1.png)
-
 ## 8.训练
     支持3种微调方式 
 - 冻结 N 层 修改models.py global_num_layers_freeze
@@ -76,11 +66,7 @@ MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=2 python train.py
 ### 是否开启lora finetuning
     with_lora
 
-### 是否开启ptuning v2
-    对于 deepspeed模式 , ptuning v2  只支持 stage 0
-    修改对应配置文件
-    "pre_seq_len": 32,
-    "prefix_projection": false
+
 ### int高效训练方式
    lora int8     修改modes.py load_in_8bit = True 修改data_utils.py 对应with_lora=True 
    注意 lora int8 多卡训练  CUDA_VISIBLE_DEVICES=显卡数量 和 data_utils.py devices 保持一致，否则容易出故障 ， 建议使用 CUDA_VISIBLE_DEVICES=显卡数量 python train.py
