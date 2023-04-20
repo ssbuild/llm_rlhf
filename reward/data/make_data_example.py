@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/4/20 9:10
-# -*- coding: utf-8 -*-
-# @Time    : 2023/2/24 12:50
+
 from datasets import load_dataset
 import json
 ds = load_dataset("openai/summarize_from_feedback", name="comparisons")

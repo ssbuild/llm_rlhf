@@ -162,6 +162,12 @@ class NN_DataHelper(DataHelper):
         super(NN_DataHelper, self).__init__(*args, **kwargs)
 
 
+    def on_get_labels(self, files: typing.List[str]):
+        D = ['score']
+        label2id = {label: i for i, label in enumerate(D)}
+        id2label = {i: label for i, label in enumerate(D)}
+        return label2id, id2label
+
 
     def on_data_ready(self):
         self.index = -1
