@@ -73,12 +73,9 @@ train_info_args = {
     # 'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
     # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
 
-    #llama transformer >= 4.28
     # 'model_name_or_path': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
     # 'config_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf/config.json',
     # 'tokenizer_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
-
-
 
     'convert_onnx': False, # 转换onnx模型
     'do_train': True,
@@ -183,8 +180,6 @@ class NN_DataHelper(DataHelper):
 
         pair_data = data
         d = TokenIds.process(pair_data,tokenizer,max_seq_length)
-
-
         if self.index < 3:
             print(d)
         return d
