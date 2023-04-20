@@ -1,7 +1,7 @@
 # @Time    : 2023/4/19 23:03
 # @Author  : tk
 # @FileName: models.py
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import torch
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
@@ -20,13 +20,14 @@ class MyTransformerSequenceClassification(TransformerForSequenceClassification):
         super(MyTransformerSequenceClassification, self).__init__(*args, **kwargs)
 
     def compute_loss(self, *args, **batch) -> tuple:
-        rewards_j = self.model(input_ids=batch["input_ids_j"], attention_mask=batch["attention_mask_j"])[0]
-        rewards_k = self.model(input_ids=batch["input_ids_k"], attention_mask=batch["attention_mask_k"])[0]
-        loss = -nn.functional.logsigmoid(rewards_j - rewards_k).mean()
-        if self.training:
-            return loss
-            # return loss, {"rewards_j": rewards_j, "rewards_k": rewards_k}
-        return loss
+        rewards_a = self.model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])[0]
+        if 'input_ids2' in batch:
+            rewards_b = self.model(input_ids=batch["input_ids2"], attention_mask=batch["attention_mask2"])[0]
+            loss = -nn.functional.logsigmoid(rewards_a - rewards_b).mean()
+            if self.training:
+                return (loss,)
+            return (loss,rewards_a,rewards_b),
+        return (rewards_a,)
 
 
 
