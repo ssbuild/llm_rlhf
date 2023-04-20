@@ -29,8 +29,9 @@
 
 
 ## 6.生成训练record
-
-    python data_utils.py
+   
+- cd data && make_data_example.py 
+- python data_utils.py
     
     注:
     num_process_worker 为多进程制作数据 ， 如果数据量较大 ， 适当调大至cpu数量
