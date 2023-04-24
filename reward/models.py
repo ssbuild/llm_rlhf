@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional
 import torch
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
-from deep_training.nlp.models.transformer import TransformerForSequenceClassification
+from deep_training.nlp.models.transformer import TransformerForTokenClassification
 from transformers import PreTrainedModel
 
 
@@ -13,7 +13,7 @@ from transformers import PreTrainedModel
 load_in_8bit = False
 
 
-class MyRewardModel(TransformerForSequenceClassification):
+class MyRewardModel(TransformerForTokenClassification):
     def __init__(self, *args, **kwargs):
         if load_in_8bit:
             kwargs.update({"load_in_8bit": True, "device_map": "auto"})
@@ -40,9 +40,9 @@ class MyRewardModel(TransformerForSequenceClassification):
             chosen_reward = chosen_rewards[i]
             rejected_reward = rejected_rewards[i]
 
-            c_inds = (chosen_id == pad_id).nonzero().squeeze(-1)
+            c_inds = (chosen_id == pad_id).nonzero()
             c_ind = c_inds[self.num_padding_at_beginning].item() if len(c_inds) > self.num_padding_at_beginning else seq_len  # OPT model pads the first token, so we need to use the seoncd padding token as the end of the sequence
-            check_divergence = (chosen_id != rejected_id).nonzero().squeeze(-1)
+            check_divergence = (chosen_id != rejected_id).nonzero()
 
             if len(check_divergence) == 0:
                 end_ind = rejected_reward.size(-1)
@@ -50,7 +50,7 @@ class MyRewardModel(TransformerForSequenceClassification):
                 r_ind = c_ind
             else:
                 # Check if there is any padding otherwise take length of sequence
-                r_inds = (rejected_id == pad_id).nonzero().squeeze(-1)
+                r_inds = (rejected_id == pad_id).nonzero()
                 r_ind = r_inds[self.num_padding_at_beginning].item() if len(r_inds) > self.num_padding_at_beginning else seq_len
                 end_ind = max(c_ind, r_ind)
                 divergence_ind = check_divergence[0]
