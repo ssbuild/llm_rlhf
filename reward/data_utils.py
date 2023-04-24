@@ -208,12 +208,15 @@ class NN_DataHelper(DataHelper):
             o[k] = torch.stack(o[k])
 
         maxlen = torch.max(o.pop('seqlen'))
+        flag = False
+        if 'seqlen2' in o:
+            flag = True
+            maxlen = torch.max(maxlen,torch.max(o.pop('seqlen2')))
+
         o['input_ids'] = o['input_ids'][:, :maxlen]
         o['attention_mask'] = o['attention_mask'][:, :maxlen]
 
-
-        if 'seqlen2' in batch:
-            maxlen = torch.max(o.pop('seqlen2'))
+        if flag:
             o['input_ids2'] = o['input_ids2'][:, :maxlen]
             o['attention_mask2'] = o['attention_mask2'][:, :maxlen]
 
