@@ -55,7 +55,6 @@ class MyRewardModel(TransformerForSequenceClassification):
                 end_ind = max(c_ind, r_ind)
                 divergence_ind = check_divergence[0]
             assert divergence_ind > 0
-            print('*' * 30,divergence_ind,end_ind)
             c_truncated_reward = chosen_reward[divergence_ind:end_ind]
             r_truncated_reward = rejected_reward[divergence_ind:end_ind]
             chosen_mean_scores.append(
