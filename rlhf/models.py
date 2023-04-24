@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional
 import torch
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
-from deep_training.nlp.models.transformer import TransformerForSequenceClassification
+from deep_training.nlp.models.transformer import TransformerForCausalLM
 from transformers import PreTrainedModel
 
 
@@ -13,29 +13,18 @@ from transformers import PreTrainedModel
 load_in_8bit = False
 
 
-class MyTransformerSequenceClassification(TransformerForSequenceClassification):
+class MyTransformerLM(TransformerForCausalLM):
     def __init__(self, *args, **kwargs):
+        # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
         if load_in_8bit:
             kwargs.update({"load_in_8bit": True, "device_map": "auto"})
-        super(MyTransformerSequenceClassification, self).__init__(*args, **kwargs)
-
-    def compute_loss(self, *args, **batch) -> tuple:
-        rewards_a = self.model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])[0]
-        if 'input_ids2' in batch:
-            rewards_b = self.model(input_ids=batch["input_ids2"], attention_mask=batch["attention_mask2"])[0]
-            loss = -nn.functional.logsigmoid(rewards_a - rewards_b).mean()
-            if self.training:
-                return (loss,)
-            return (loss,rewards_a,rewards_b),
-        return (rewards_a,)
+        super(MyTransformerLM, self).__init__(*args, **kwargs)
 
 
-
-
-class MyTransformer(MyTransformerSequenceClassification, with_pl=True):
+class MyTransformerForLLM(MyTransformerLM, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
-        super(MyTransformer, self).__init__(*args, **kwargs)
+        super(MyTransformerForLLM, self).__init__(*args, **kwargs)
         self.lora_args = lora_args
         if lora_args is not None and lora_args.with_lora:
             model = LoraModel(self.backbone, lora_args)
@@ -47,3 +36,5 @@ class MyTransformer(MyTransformerSequenceClassification, with_pl=True):
         if self.lora_args is not None and self.lora_args.with_lora:
             return self.backbone.model.model
         return self.backbone.model
+
+
