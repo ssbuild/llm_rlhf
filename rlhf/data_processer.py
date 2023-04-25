@@ -34,41 +34,39 @@ class CorpusPreprocess:
             text_a = prompt + chosen + tokenizer.eos_token
             text_b = prompt + rejected + tokenizer.eos_token
             D.append((text_a, text_b))
-            torch.flip()
         return D
 
 
 class TokenIds:
 
-    @classmethod
-    def get_prompt(cls,prompt,tokenizer: PreTrainedTokenizer,max_seq_length: int):
-        """
-        Get the prompt after T5 decoding to make sure dictionary
-        of prompts and summaries is consistent decode prompt from trlX pipeline
-        """
-        assert max_seq_length > 5
-        tmp = tokenizer.decode(
-            tokenizer(
-                prompt.split("TL;DR:")[0],
-                truncation=True,
-                max_length=max_seq_length - 5,  # to make sure "TL;DR" dont get truncated
-                add_special_tokens=False,
-            )["input_ids"],
-            skip_special_tokens=True,
-        ).strip()
-        tmp = tmp + "\nTL;DR:"
-        formatted_prompt = tokenizer.decode(
-            tokenizer(tmp, truncation=True, max_length=max_seq_length, add_special_tokens=False)["input_ids"],
-            skip_special_tokens=True,
-        ).strip()
-        return formatted_prompt
+    # @classmethod
+    # def get_prompt(cls,prompt,tokenizer: PreTrainedTokenizer,max_seq_length: int):
+    #     """
+    #     Get the prompt after T5 decoding to make sure dictionary
+    #     of prompts and summaries is consistent decode prompt from trlX pipeline
+    #     """
+    #     assert max_seq_length > 5
+    #     tmp = tokenizer.decode(
+    #         tokenizer(
+    #             prompt.split("TL;DR:")[0],
+    #             truncation=True,
+    #             max_length=max_seq_length - 5,  # to make sure "TL;DR" dont get truncated
+    #             add_special_tokens=False,
+    #         )["input_ids"],
+    #         skip_special_tokens=True,
+    #     ).strip()
+    #     tmp = tmp + "\nTL;DR:"
+    #     formatted_prompt = tokenizer.decode(
+    #         tokenizer(tmp, truncation=True, max_length=max_seq_length, add_special_tokens=False)["input_ids"],
+    #         skip_special_tokens=True,
+    #     ).strip()
+    #     return formatted_prompt
 
     @classmethod
     def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_target_length: int):
         prompt, label = pair_data
-        fprompt = cls.get_prompt(prompt,tokenizer,max_seq_length - max_target_length)
 
-        o = tokenizer.encode_plus(fprompt, truncation=True, max_length=max_seq_length)
+        o = tokenizer.encode_plus(prompt, truncation=True, max_length=max_seq_length)
         input_ids = np.asarray(o['input_ids'],dtype=np.int32)
         attention_mask = np.asarray(o['attention_mask'],dtype=np.int32)
 
@@ -80,7 +78,7 @@ class TokenIds:
             attention_mask = np.pad(attention_mask, (0, pad_len), 'constant', constant_values=(0, 0))
 
         return {
-            "prompt": np.array(bytes(fprompt,encoding='utf-8'),dtype=np.bytes),
+            "prompt": np.array(bytes(prompt,encoding='utf-8'),dtype=np.bytes),
             "label": np.array(bytes(label, encoding='utf-8'), dtype=np.bytes),
             "input_ids": input_ids,
             "attention_mask": attention_mask,
