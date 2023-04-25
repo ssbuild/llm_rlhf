@@ -59,9 +59,9 @@ def gather_log_probs(logits, labels):
     log_probs_labels = log_probs.gather(dim=-1, index=labels.unsqueeze(-1))
     return log_probs_labels.squeeze(-1)
 
-class MyTransformerForTraining(TransformerLightningModule):
+class MyTransformer(TransformerLightningModule):
     def __init__(self, *args, **kwargs):
-        super(MyTransformerForTraining, self).__init__(*args, **kwargs)
+        super(MyTransformer, self).__init__(*args, **kwargs)
         self.automatic_optimization = False
         self.rlhf_engine = RLHF_Engine()
         self.actor_model = self.rlhf_engine.actor_model
@@ -80,10 +80,14 @@ class MyTransformerForTraining(TransformerLightningModule):
         if len(optimizer1) == 2:
             o1['optimizer'] = optimizer1[0][0]
             o1['scheduler'] = optimizer1[1][0]
+        else:
+            o1['optimizer'] = optimizer1[0]
 
         if len(optimizer2) == 2:
             o2['optimizer'] = optimizer2[0][0]
             o2['scheduler'] = optimizer2[1][0]
+        else:
+            o2['optimizer'] = optimizer2[0]
         return (o1,o2)
 
     def training_step(self, batch):
@@ -136,7 +140,6 @@ class MyTransformerForTraining(TransformerLightningModule):
         opt2.zero_grad()
         self.untoggle_optimizer(opt2)
 
-        return actor_loss, critic_loss
 
     def actor_loss_fn(self, logprobs, old_logprobs, advantages, mask):
         ## policy gradient loss
