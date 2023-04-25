@@ -87,7 +87,7 @@ class MyTransformerForTraining(TransformerLightningModule):
         return (o1,o2)
 
     def training_step(self, batch):
-        self.compute_loss(batch)
+        self.compute_loss(**batch)
 
     def compute_loss(self, *args, **inputs):
         opt1, opt2 = self.optimizers()
