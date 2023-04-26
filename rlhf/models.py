@@ -66,28 +66,30 @@ class MyTransformer(TransformerLightningModule):
         self.rlhf_engine = RLHF_Engine()
         self.actor_model = self.rlhf_engine.actor_model
 
+        self.max_answer_seq_len = 128
+
 
     def configure_optimizers(self):
         p1 = self.get_named_parameters(self.rlhf_engine.actor_model)
         p2 = self.get_named_parameters(self.rlhf_engine.critic_model)
 
-        optimizer1 = configure_optimizers(p1, self.training_args,
+        opt1 = configure_optimizers(p1, self.training_args,
                                     self.trainer.estimated_stepping_batches)
 
-        optimizer2 = configure_optimizers(p2, self.training_args,
+        opt2 = configure_optimizers(p2, self.training_args,
                                     self.trainer.estimated_stepping_batches)
         o1,o2 = {},{}
-        if len(optimizer1) == 2:
-            o1['optimizer'] = optimizer1[0][0]
-            o1['scheduler'] = optimizer1[1][0]
+        if len(opt1) == 2:
+            o1['optimizer'] = opt1[0][0]
+            o1['scheduler'] = opt1[1][0]
         else:
-            o1['optimizer'] = optimizer1[0]
+            o1['optimizer'] = opt1[0]
 
-        if len(optimizer2) == 2:
-            o2['optimizer'] = optimizer2[0][0]
-            o2['scheduler'] = optimizer2[1][0]
+        if len(opt2) == 2:
+            o2['optimizer'] = opt2[0][0]
+            o2['scheduler'] = opt2[1][0]
         else:
-            o2['optimizer'] = optimizer2[0]
+            o2['optimizer'] = opt2[0]
         return (o1,o2)
 
     def training_step(self, batch):
@@ -200,8 +202,7 @@ class MyTransformer(TransformerLightningModule):
         valid_ans_len = (ans != self.tokenizer.pad_token_id).sum(dim=-1)
         out_seq = []
         for i in range(batch_size):
-            if valid_ans_len[
-                    i] <= 1:  # if the answer is shorter than 1 token, drop it
+            if valid_ans_len[i] <= 1:  # if the answer is shorter than 1 token, drop it
                 continue
             else:
                 out_seq.append(seq[i:i + 1])
@@ -221,8 +222,8 @@ class MyTransformer(TransformerLightningModule):
 
         with torch.no_grad():
             output = self.actor_model(seq, attention_mask=attention_mask)
-            output_ref = self.ref_model(seq, attention_mask=attention_mask)
-            reward_score = self.reward_model(
+            output_ref = self.rlhf_engine.ref_model(seq, attention_mask=attention_mask)
+            reward_score = self.rlhf_engine.reward_model(
                 seq, attention_mask,
                 prompt_length=self.prompt_length)['chosen_end_scores'].detach(
                 )
