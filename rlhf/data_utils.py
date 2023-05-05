@@ -9,11 +9,10 @@ import typing
 import numpy as np
 import torch
 from deep_training.data_helper import DataHelper, ModelArguments, TrainingArguments, DataArguments
-from deep_training.nlp.models.lora.v2 import LoraArguments,LoraConfig
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-
+from models import LoraArguments,LoraConfig,PPOArguments,PPOConfig
 
 # 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
 
@@ -54,6 +53,33 @@ adalora_info_args = {
     'total_step': None, #The total training steps.
     'rank_pattern': None, #The saved rank pattern.
 }
+
+
+
+ppp_info_args = {
+    "model_arch_type": "causal" , # one of causal , seq2seq
+    "ppo_epochs": 2, # Number of updates per batch
+    "num_rollouts": 128, # Number  of experiences to observe before learning
+    "chunk_size": 128, # Number of chunk_size of training
+    "init_kl_coef": 0.001, # Initial value for KL coefficient
+    "target": None, # Target value for KL coefficient
+    "horizon": 10000, # Number of steps for KL coefficient to reach target
+    "gamma": 1., # Discount factor"
+    "lam": 0.95, # GAE lambda
+    "cliprange": 0.2, # "Clipping range for PPO policy loss (1 - cliprange, 1 + cliprange)"})
+                        # cliprange_value: float = field(default=0.2, metadata={"help": "Clipping range for predicted values"
+    "cliprange_value": 0.2, # Clipping range for predicted values"
+                          #   "(observed values - cliprange_value, observed values + cliprange_value)"}
+    "vf_coef": 1., # Value loss scale w.r.t policy loss
+    "scale_reward": "ignored",
+    "ref_mean": None,
+    "ref_std": None,
+    "cliprange_reward": 10,
+    "gen_kwargs" : {}, # Additioanl kwargs for the generation
+    "gen_experience_kwargs": None, # Additioanl kwargs for the gen_experience_kwargs
+
+}
+
 
 train_info_args = {
     'devices': 1,
@@ -125,6 +151,7 @@ train_info_args = {
     ##############  lora模块
     'lora': {**lora_info_args},
     'adalora': {**adalora_info_args},
+    "ppo": {**ppp_info_args},
 
 }
 
@@ -219,9 +246,10 @@ class NN_DataHelper(DataHelper):
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
-    model_args, training_args, data_args, lora_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,PPOArguments))
+    model_args, training_args, data_args, lora_args,ppo_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
+    ppo_args = ppo_args.config
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()

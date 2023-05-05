@@ -5,16 +5,18 @@ import logging
 
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
-from deep_training.nlp.models.lora.v2 import LoraArguments, LoraConfig
 from deep_training.utils.trainer import SimpleModelCheckpoint
-from lightning import Trainer
+
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
-from models import MyTransformer
+from models import MyTransformer,LoraArguments,LoraConfig,PPOArguments,PPOConfig
+
+
+from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
 
 
 class MySimpleModelCheckpoint(SimpleModelCheckpoint):
@@ -66,14 +68,12 @@ class MySimpleModelCheckpoint(SimpleModelCheckpoint):
 
 
 
-class EpochEndCallback(Callback):
-    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        ...
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
-    model_args, training_args, data_args, lora_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments, PPOArguments))
+    model_args, training_args, data_args, lora_args, ppo_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
+    ppo_args = ppo_args.config
 
     deepspeed_config = get_deepspeed_config()
     # 保存最小loss模型
@@ -102,17 +102,14 @@ if __name__ == '__main__':
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
-    trainer = Trainer(
+    trainer = PPOTrainer(
         callbacks=[checkpoint_callback, LearningRateMonitor(logging_interval='step')],
         max_epochs=training_args.max_epochs,
         max_steps=training_args.max_steps,
         accelerator="gpu",
         devices=data_args.devices,
-        enable_progress_bar=True,
-        default_root_dir=data_args.output_dir,
-        gradient_clip_val=training_args.max_grad_norm,
+        checkpoint_dir=data_args.output_dir,
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
-        num_sanity_val_steps=0,
         strategy=strategy
         # precision=16,#半精度
     )
@@ -170,7 +167,7 @@ if __name__ == '__main__':
             num_processes=trainer.world_size, process_index=trainer.global_rank)
 
         if train_datasets is not None:
-            trainer.fit(pl_model, train_dataloaders=train_datasets)
+            trainer.fit(pl_model, train_loader=train_datasets)
 
     else:
         if lora_args is None:
