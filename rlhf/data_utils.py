@@ -18,7 +18,7 @@ from models import LoraArguments,LoraConfig,PPOArguments,PPOConfig
 
 
 lora_info_args = {
-    'with_lora': False,  # 是否启用lora模块
+    'with_lora': True,  # 是否启用lora模块
     'lora_type': 'lora',
     'r': 8,
     'target_modules': ['query_key_value'],  # bloom,gpt_neox
@@ -77,7 +77,6 @@ ppp_info_args = {
     "cliprange_reward": 10,
     "gen_kwargs" : {}, # Additioanl kwargs for the generation
     "gen_experience_kwargs": None, # Additioanl kwargs for the gen_experience_kwargs
-
 }
 
 
@@ -131,7 +130,6 @@ train_info_args = {
     # 'scheduler_type': 'CAL',
     # 'scheduler': {'rewarm_epoch_num': 2,'verbose': True},
 
-
     'optimizer_betas': (0.9, 0.999),
     'train_batch_size': 1,
     'eval_batch_size': 2,
@@ -152,11 +150,7 @@ train_info_args = {
     'lora': {**lora_info_args},
     'adalora': {**adalora_info_args},
     "ppo": {**ppp_info_args},
-
 }
-
-
-
 
 
 

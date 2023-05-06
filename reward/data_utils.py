@@ -10,7 +10,7 @@ import typing
 import numpy as np
 import torch
 from deep_training.data_helper import DataHelper, ModelArguments, TrainingArguments, DataArguments
-from deep_training.nlp.models.lora.v2 import LoraArguments,LoraConfig
+from models import LoraArguments,LoraConfig
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
@@ -20,7 +20,7 @@ from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOK
 
 
 lora_info_args = {
-    'with_lora': False,  # 是否启用lora模块
+    'with_lora': True,  # 是否启用lora模块
     'lora_type': 'lora',
     'r': 8,
     'target_modules': ['query_key_value'],  # bloom,gpt_neox
@@ -84,11 +84,11 @@ train_info_args = {
     'max_steps': -1,
     'optimizer': 'lion', # one of adamw,adam,lamb,lion
 
-    'scheduler_type': 'CAWR',
-    'scheduler':{'T_mult': 1, 'rewarm_epoch_num': 0.5, 'verbose': False},
+    # 'scheduler_type': 'CAWR',
+    # 'scheduler':{'T_mult': 1, 'rewarm_epoch_num': 0.5, 'verbose': False},
 
-    # 'scheduler_type': 'linear',# one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau
-    # 'scheduler': None,
+    'scheduler_type': 'linear',# one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau
+    'scheduler': None,
 
     # 切换scheduler类型
     # 'scheduler_type': 'WarmupCosine',
@@ -108,7 +108,7 @@ train_info_args = {
 
 
     'optimizer_betas': (0.9, 0.999),
-    'train_batch_size': 1,
+    'train_batch_size': 4,
     'eval_batch_size': 2,
     'test_batch_size': 2,
     'learning_rate': 2e-5,  #

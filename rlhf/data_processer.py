@@ -21,7 +21,7 @@ class CorpusPreprocess:
     #     "rejected": " Buying in bulk is easy. There are stores in your area that offer bulk food. Organic, bulk foods are also widely available online. You can find organic dried pasta, nuts, baking items, and spices in bulk. When shopping for groceries, buy the largest package or container possible to get the largest savings. Organic, bulk food is more expensive than traditional packaged food, but much cheaper than organic grocery stores. You can get many non-perishable items for half price or less when buying in bulk."
     # }
     @classmethod
-    def process(cls,tokenizer,lines):
+    def process(cls,lines):
         D = []
         for i, line in enumerate(lines):
             jd = json.loads(line)
@@ -31,8 +31,11 @@ class CorpusPreprocess:
             # response = jd['response']
             chosen = jd['chosen']
             rejected = jd['rejected']
-            text_a = prompt + chosen + tokenizer.eos_token
-            text_b = prompt + rejected + tokenizer.eos_token
+            text_a = prompt + chosen
+            text_b = prompt + rejected
+            if text_a == text_b:
+                print('warning text_a == text_b and it will be ingored')
+                continue
             D.append((text_a, text_b))
         return D
 

@@ -19,8 +19,6 @@ class MyRewardModel(TransformerForTokenClassification):
             kwargs.update({"load_in_8bit": True, "device_map": "auto"})
         super(MyRewardModel, self).__init__(*args, **kwargs)
 
-        self.num_padding_at_beginning = 0
-
     def forward_reward(self,**batch):
         value = self.model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])[0]
         return value.squeeze(-1)
@@ -32,78 +30,78 @@ class MyRewardModel(TransformerForTokenClassification):
         chosen_mean_scores = []
         rejected_mean_scores = []
         loss = 0.
-        seq_len = chosen_ids.size(1)
-
-        pad_id = torch.tensor(self.config.pad_token_id, dtype=chosen_ids.dtype, device=chosen_values.device)
+        # pad_id = torch.tensor(self.config.pad_token_id, dtype=chosen_ids.dtype, device=chosen_values.device)
         for i in range(chosen_ids.size(0)):
             chosen_id = chosen_ids[i]
             rejected_id = rejected_ids[i]
             chosen_value = chosen_values[i]
             rejected_value = rejected_values[i]
+            # if torch.all(torch.eq(chosen_id, rejected_id)).item():
+            #     c_inds = (chosen_id == self.config.pad_token_id).nonzero()
+            #     c_ind = c_inds[0].item() if len(c_inds) > 0 else chosen_id.shape[0]
+            #     chosen_mean_scores.append(chosen_value[c_ind - 1])
+            #     inference = True
+            #     continue
+            # Check if there is any padding otherwise take length of sequence
+            c_inds = (chosen_id == self.config.pad_token_id).nonzero()
+            c_ind = c_inds[0].item() if len(c_inds) > 0 else chosen_id.shape[0]
+            r_inds = (rejected_id == self.config.pad_token_id).nonzero()
+            r_ind = r_inds[0].item() if len(r_inds) > 0 else rejected_id.shape[0]
+            end_ind = max(c_ind, r_ind)
 
-            c_inds = (chosen_id == pad_id).nonzero()
-            c_ind = c_inds[self.num_padding_at_beginning].item() if len(c_inds) > self.num_padding_at_beginning else seq_len  # OPT model pads the first token, so we need to use the seoncd padding token as the end of the sequence
-            check_divergence = (chosen_id != rejected_id).nonzero()
-
-            if len(check_divergence) == 0:
-                end_ind = rejected_value.size(-1)
-                divergence_ind = end_ind - 1
-                r_ind = c_ind
-            else:
-                # Check if there is any padding otherwise take length of sequence
-                r_inds = (rejected_id == pad_id).nonzero()
-                r_ind = r_inds[self.num_padding_at_beginning].item() if len(r_inds) > self.num_padding_at_beginning else seq_len
-                end_ind = max(c_ind, r_ind)
-                divergence_ind = check_divergence[0]
+            # Retrieve first index where trajectories diverge
+            divergence_ind = (chosen_id != rejected_id).nonzero()[0]
             assert divergence_ind > 0
+
+            # Index into the correct rewards
             c_truncated_reward = chosen_value[divergence_ind:end_ind]
             r_truncated_reward = rejected_value[divergence_ind:end_ind]
-            chosen_mean_scores.append(
-                chosen_value[c_ind - 1])  # use the end score for refrnence
-            rejected_mean_scores.append(rejected_value[r_ind - 1])
 
-            loss += -torch.log(
-                torch.sigmoid(c_truncated_reward - r_truncated_reward)).mean()
+            # Append the last rewards to the list of end scores
+            chosen_mean_scores.append(c_truncated_reward[-1])
+            rejected_mean_scores.append(r_truncated_reward[-1])
+
+            # Compute loss based on truncated rewards (ignore padding)
+            loss += -torch.log(torch.sigmoid(c_truncated_reward - r_truncated_reward)).mean()
+
         loss = loss / chosen_ids.size(0)
         chosen_mean_scores = torch.stack(chosen_mean_scores)
         rejected_mean_scores = torch.stack(rejected_mean_scores)
         return loss,chosen_mean_scores,rejected_mean_scores
 
-    def forward_value(self,input_ids,values,prompt_length):
+    def forward_value(self,input_ids,values):
         bs = values.size(0)
         seq_len = input_ids.shape[1]
-        chosen_end_scores = [
+        chosen_mean_scores = [
         ]  # we use this name for consistency with the original forwad function
         for i in range(bs):
             input_id = input_ids[i]
             value = values[i]
-
-            c_inds = (input_id[prompt_length:] == self.PAD_ID).nonzero()
+            c_inds = (input_id == self.config.pad_token_id).nonzero()
             # here we only use the answer part of the sequence so we do not need to care about the padding at the beginning
-            c_ind = c_inds[0].item() + prompt_length if len(
-                c_inds) > 0 else seq_len
-            chosen_end_scores.append(value[c_ind - 1])
-        return values,torch.stack(chosen_end_scores)
+            c_ind = c_inds[0].item() if len(c_inds) > 0 else seq_len
+            chosen_mean_scores.append(value[c_ind - 1])
+        return values,torch.stack(chosen_mean_scores)
 
 
-    def compute_loss(self, *args,return_value_only=False,prompt_length=0, **batch) -> tuple:
+    def compute_loss(self, *args,return_value_only=False,**batch) -> tuple:
         value_a = self.forward_reward(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])
         if 'input_ids2' in batch:
             value_b = self.forward_reward(input_ids=batch["input_ids2"], attention_mask=batch["attention_mask2"])
             loss,chosen_mean_scores,rejected_mean_scores = self.forward_loss(batch["input_ids"],value_a,batch["input_ids2"],value_b)
             loss_dict = {
                 "loss": loss,
-                "chosen_mean_scores": chosen_mean_scores,
-                "rejected_mean_scores": rejected_mean_scores
+                "chosen_mean_scores": chosen_mean_scores.mean(),
+                "rejected_mean_scores": rejected_mean_scores.mean()
             }
             if self.training:
                 return (loss_dict,)
             return (loss,value_a,value_b)
 
-        values,chosen_end_scores = self.forward_value(batch["input_ids"],value_a,prompt_length)
+        values,chosen_mean_scores = self.forward_value(batch["input_ids"],value_a)
         if return_value_only:
             return (values,)
-        return (values,chosen_end_scores)
+        return (values,chosen_mean_scores)
 
 
 

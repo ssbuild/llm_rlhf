@@ -75,15 +75,20 @@ class CorpusPreprocess:
             # response = jd['response']
             chosen = jd['chosen']
             rejected = jd['rejected']
-            text_a = prompt + chosen + tokenizer.eos_token
-            text_b = prompt + rejected + tokenizer.eos_token
+            text_a = prompt + chosen
+            text_b = prompt + rejected
+            if text_a == text_b:
+                continue
             D.append((text_a, text_b))
+        print('*' * 30,len(D))
         return D
 
 class TokenIds:
     @classmethod
     def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int):
         text_a, text_b = pair_data
+        assert text_a != text_b , ValueError('data must not be same')
+
         o1 = tokenizer.encode_plus(text_a, truncation=True, max_length=max_seq_length)
         o2 = tokenizer.encode_plus(text_b, truncation=True, max_length=max_seq_length)
 
@@ -95,6 +100,11 @@ class TokenIds:
 
         seqlen_a = len(input_ids_a)
         seqlen_b = len(input_ids_b)
+
+
+        if seqlen_a == seqlen_b:
+            if np.all(input_ids_a == input_ids_b):
+                return None
 
         pad_val = tokenizer.pad_token_id
         pad_len = max_seq_length - seqlen_a
