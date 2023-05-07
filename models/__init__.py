@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# @Time:  11:30
+# @Author: tk
+# @File：__init__.py
+
+
 # @Time    : 2023/4/19 23:03
 # @Author  : tk
 # @FileName: models.py
@@ -106,10 +112,10 @@ class MyRewardModel(TransformerForTokenClassification):
 
 
 
-class MyTransformer(MyRewardModel, with_pl=True):
+class MyRewardTransformer(MyRewardModel, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
-        super(MyTransformer, self).__init__(*args, **kwargs)
+        super(MyRewardTransformer, self).__init__(*args, **kwargs)
         self.lora_args = lora_args
         if lora_args is not None and lora_args.with_lora:
             model = LoraModel(self.backbone, lora_args)

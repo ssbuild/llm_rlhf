@@ -9,6 +9,7 @@ from deep_training.nlp.models.transformer import TransformerForCausalLM
 from transformers import PreTrainedModel
 from deep_training.nlp.rl.ppo.ppo_module import PPOModelBase
 from deep_training.nlp.rl.ppo.configuration import PPOConfig,PPOArguments
+from reward.models import MyRewardModel
 
 
 #如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes

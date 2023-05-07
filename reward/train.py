@@ -14,7 +14,7 @@ from transformers import HfArgumentParser
 
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
-from models import MyTransformer
+from models import MyRewardTransformer
 
 
 class MySimpleModelCheckpoint(SimpleModelCheckpoint):
@@ -29,7 +29,7 @@ class MySimpleModelCheckpoint(SimpleModelCheckpoint):
         model_args = self.external_kwargs['model_args']
         training_args = self.external_kwargs['training_args']
         lora_args = LoraArguments.from_pretrained(self.last_weight_file)
-        pl_module = MyTransformer(lora_args=lora_args,
+        pl_module = MyRewardTransformer(lora_args=lora_args,
                               config=config,
                               model_args=model_args,
                               training_args=training_args)
@@ -48,21 +48,9 @@ class MySimpleModelCheckpoint(SimpleModelCheckpoint):
         if lora_args is None:
             super(MySimpleModelCheckpoint, self).on_save_model(trainer, pl_module)
         else:
-            monitor_candidates = self._monitor_candidates(trainer)
-            monitor_candidates.update(self.on_get_metric(trainer, pl_module))
-            val = monitor_candidates.get(self.monitor, None)
-
-            #保存loss最小权重
-            if self.update_best(val):
-                logging.info('epoch {} ,step {} , save best {}, {}\n'.format(monitor_candidates['epoch'],
-                                                                             monitor_candidates['step'],
-                                                                             self.best[self.monitor],
-                                                                             self.weight_file))
-                pl_module.backbone.save_pretrained(self.weight_file)
-            #保存最新权重
+            logging.info('save weight step {}'.format(trainer.global_step))
+            # 保存最新权重
             pl_module.backbone.save_pretrained(self.last_weight_file)
-            # # 从最新权重加载模型
-            # pl_module = self.load_model_from_ckpt()
 
 
 if __name__ == '__main__':
@@ -142,7 +130,7 @@ if __name__ == '__main__':
     if data_args.do_test:
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
-    pl_model = MyTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args)
+    pl_model = MyRewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args)
 
     ckpt_path = './best_ckpt/best.pt'
     if not data_args.convert_onnx:
@@ -151,7 +139,7 @@ if __name__ == '__main__':
         # if os.path.exists(ckpt_path):
         #     if  lora_args is None:
         #         # 加载权重继续训练
-        #         pl_model = MyTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,strict=False)
+        #         pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,strict=False)
         #     else:
         #         # 加载lora权重 继续训练  0.0.20版本支持lora 继续训练
         #         pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_path,lora_config=lora_args,is_trainable=True,strict=False)
@@ -170,7 +158,7 @@ if __name__ == '__main__':
     else:
         if lora_args is None:
             # 加载权重
-            pl_model = MyTransformer.load_from_checkpoint(ckpt_path, config=config,
+            pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,
                                                           model_args=model_args,
                                                           training_args=training_args,
                                                           lora_args=lora_args, strict=False)
@@ -182,7 +170,7 @@ if __name__ == '__main__':
         else:
             # 加载权重
             lora_args = LoraArguments.from_pretrained('./best_ckpt')
-            pl_module = MyTransformer(lora_args=lora_args,
+            pl_module = MyRewardTransformer(lora_args=lora_args,
                                       config=config,
                                       model_args=model_args,
                                       training_args=training_args)
