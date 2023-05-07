@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/4/20 9:10
-# 数据源 https://github.com/openai/summarize-from-feedback
 
 from datasets import load_dataset
 import json

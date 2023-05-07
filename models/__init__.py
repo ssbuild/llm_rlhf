@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 # @Time:  11:30
 # @Author: tk
-# @File：__init__.py
 
-
-# @Time    : 2023/4/19 23:03
-# @Author  : tk
-# @FileName: models.py
 from typing import List, Tuple, Optional
 import torch
+from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
+from deep_training.nlp.rl.ppo.configuration import PPOArguments, PPOConfig
+from deep_training.nlp.rl.ppo.ppo_module import PPOModelBase
+from deep_training.nlp.utils import configure_optimizers
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
 from deep_training.nlp.models.transformer import TransformerForTokenClassification
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, HfArgumentParser,AutoConfig
 
+from config import reward_config
 
 #如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
 load_in_8bit = False
@@ -127,3 +127,84 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
         if self.lora_args is not None and self.lora_args.with_lora:
             return self.backbone.model.model
         return self.backbone.model
+
+
+
+class MyPPOTransformer(MyRewardModel,PPOModelBase, with_pl=True):
+    def __init__(self, *args, **kwargs):
+        lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        super(MyPPOTransformer, self).__init__(*args, **kwargs)
+        self.lora_args = lora_args
+        if lora_args is not None and lora_args.with_lora:
+            model = LoraModel(self.backbone, lora_args)
+            print('*' * 30, 'lora info')
+            model.print_trainable_parameters()
+            self.set_model(model, copy_attr=False)
+
+
+    def get_llm_model(self) -> PreTrainedModel:
+        if self.lora_args is not None and self.lora_args.with_lora:
+            return self.backbone.model.model
+        return self.backbone.model
+
+
+    def configure_optimizers(self):
+        p = self.get_named_parameters(self.backbone)
+        opt = configure_optimizers(p, self.training_args,
+                                    self.trainer.estimated_stepping_batches)
+
+        o = {}
+        if len(opt) == 2:
+            o['optimizer'] = opt[0][0]
+            o['scheduler'] = opt[1][0]
+        else:
+            o['optimizer'] = opt[0]
+
+        return (o,)
+
+    def training_step(self, batch):
+        outputs = self.compute_loss(**batch)
+        return outputs
+
+    def validation_step(self, batch):
+        outputs = self.compute_loss(**batch)
+        return outputs
+
+    def compute_loss(self, *args, **inputs):
+        return self.forward_ppo_loss(*args, **inputs)
+
+
+
+
+
+def load_reward_model(model_dir) ->MyRewardTransformer:
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
+    model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
+    lora_args = lora_args.config
+    config = AutoConfig.from_pretrained(model_dir)
+    # 加载权重
+    lora_args = LoraArguments.from_pretrained(model_dir)
+    pl_module = MyRewardTransformer(lora_args=lora_args,config=config,model_args=model_args,training_args=training_args)
+    # 二次加载权重
+    pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=model_dir,lora_config=lora_args)
+
+
+    pl_module.eval()
+    pl_module.requires_grad_(False)
+    return pl_module
+
+
+def load_ref_model(model_dir) ->MyRewardTransformer:
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
+    model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
+    lora_args = lora_args.config
+    config = AutoConfig.from_pretrained(model_dir)
+    # 加载权重
+    lora_args = LoraArguments.from_pretrained(model_dir)
+    pl_module = MyRewardTransformer(lora_args=lora_args,config=config,model_args=model_args,training_args=training_args)
+    # 二次加载权重
+    pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=model_dir,lora_config=lora_args)
+
+    pl_module.eval()
+    pl_module.requires_grad_(False)
+    return pl_module

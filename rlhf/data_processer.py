@@ -82,7 +82,7 @@ class TokenIds:
 
         return {
             "prompt": np.array(bytes(prompt,encoding='utf-8'),dtype=np.bytes),
-            "label": np.array(bytes(label, encoding='utf-8'), dtype=np.bytes),
+            "label": np.array(bytes(label, encoding='utf-8')),
             "input_ids": input_ids,
             "attention_mask": attention_mask,
             "seqlen": np.asarray(seqlen, dtype=np.int32),

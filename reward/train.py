@@ -158,10 +158,7 @@ if __name__ == '__main__':
     else:
         if lora_args is None:
             # 加载权重
-            pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,
-                                                          model_args=model_args,
-                                                          training_args=training_args,
-                                                          lora_args=lora_args, strict=False)
+            pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args, strict=False)
 
 
             model = pl_model.get_glm_model()
@@ -170,12 +167,7 @@ if __name__ == '__main__':
         else:
             # 加载权重
             lora_args = LoraArguments.from_pretrained('./best_ckpt')
-            pl_module = MyRewardTransformer(lora_args=lora_args,
-                                      config=config,
-                                      model_args=model_args,
-                                      training_args=training_args)
-            # 二次加载权重
-            pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path='./best_ckpt',
-                                               lora_config=lora_args)
-
+            pl_module = MyRewardTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args, strict=False)
+            # 加载lora权重
+            pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path='./best_ckpt',lora_config=lora_args)
             model = pl_model.get_llm_model()
