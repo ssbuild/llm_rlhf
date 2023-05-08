@@ -65,7 +65,13 @@ ppp_info_args = {
     "ref_mean": None,
     "ref_std": None,
     "cliprange_reward": 10,
-    "gen_kwargs" : {}, # Additioanl kwargs for the generation
+    # Additioanl kwargs for the generation
+    "gen_kwargs": dict(
+        max_new_tokens=128,
+        top_k=0,
+        top_p=1.0,
+        do_sample=True,
+    ),
     "gen_experience_kwargs": None, # Additioanl kwargs for the gen_experience_kwargs
 }
 

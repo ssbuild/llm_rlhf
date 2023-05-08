@@ -51,11 +51,13 @@ class NN_DataHelper(DataHelper):
         tokenizer: PreTrainedTokenizer
         config = self.config
         max_seq_length = self.max_seq_length_dict[mode]
-        max_target_length = self.data_args.max_target_length
+
+        ppo_args:PPOConfig = self.external_kwargs['ppo_args']
+        max_new_tokens = ppo_args.gen_kwargs['max_new_tokens']
         tokenizer = self.tokenizer
 
         pair_data = data
-        d = TokenIds.process(pair_data,tokenizer,max_seq_length,max_target_length)
+        d = TokenIds.process(pair_data,tokenizer,max_seq_length,max_new_tokens)
         if self.index < 3:
             print(d)
         return d
@@ -72,22 +74,25 @@ class NN_DataHelper(DataHelper):
 
     def collate_fn(self, batch):
         o = {}
+
+        keep_keys = ['seqlen','input_ids','attention_mask']
         for i, b in enumerate(batch):
             if i == 0:
                 for k in b:
-                    o[k] = [torch.tensor(b[k])]
+                    if k in keep_keys:
+                        o[k] = [torch.tensor(b[k])]
+
             else:
                 for k in b:
-                    o[k].append(torch.tensor(b[k]))
+                    if k in keep_keys:
+                        o[k].append(torch.tensor(b[k]))
         for k in o:
-            o[k] = torch.stack(o[k])
+            if k in keep_keys:
+                o[k] = torch.stack(o[k])
 
         maxlen = torch.max(o.pop('seqlen'))
         o['input_ids'] = o['input_ids'][:, :maxlen]
         o['attention_mask'] = o['attention_mask'][:, :maxlen]
-
-
-
 
         return o
 
@@ -100,7 +105,7 @@ if __name__ == '__main__':
     lora_args = lora_args.config
     ppo_args = ppo_args.config
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args)
+    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
     config.decoder_start_token_id = config.bos_token_id
 

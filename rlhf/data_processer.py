@@ -31,12 +31,10 @@ class CorpusPreprocess:
             # response = jd['response']
             chosen = jd['chosen']
             rejected = jd['rejected']
-            text_a = prompt + chosen
-            text_b = prompt + rejected
-            if text_a == text_b:
+            if chosen == rejected:
                 print('warning text_a == text_b and it will be ingored')
                 continue
-            D.append((text_a, text_b))
+            D.append((prompt, chosen))
         return D
 
 
@@ -66,16 +64,18 @@ class TokenIds:
     #     return formatted_prompt
 
     @classmethod
-    def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_target_length: int):
+    def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_new_tokens: int):
         prompt, label = pair_data
 
-        o = tokenizer.encode_plus(prompt, truncation=True, max_length=max_seq_length)
+        max_prompt_length = max_seq_length - max_new_tokens
+
+        o = tokenizer.encode_plus(prompt, truncation=True, max_length=max_prompt_length)
         input_ids = np.asarray(o['input_ids'],dtype=np.int32)
         attention_mask = np.asarray(o['attention_mask'],dtype=np.int32)
 
         seqlen = len(input_ids)
         pad_val = tokenizer.pad_token_id
-        pad_len = max_seq_length - seqlen
+        pad_len = max_prompt_length - seqlen
         if pad_len:
             input_ids = np.pad(input_ids, (0, pad_len), 'constant', constant_values=(pad_val, pad_val))
             attention_mask = np.pad(attention_mask, (0, pad_len), 'constant', constant_values=(0, 0))

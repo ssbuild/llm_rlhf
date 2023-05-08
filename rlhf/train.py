@@ -52,7 +52,7 @@ if __name__ == '__main__':
     )
 
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args)
+    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
     config.decoder_start_token_id = config.bos_token_id
 

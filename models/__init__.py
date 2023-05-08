@@ -10,8 +10,8 @@ from deep_training.nlp.rl.ppo.ppo_module import PPOModelBase
 from deep_training.nlp.utils import configure_optimizers
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
-from deep_training.nlp.models.transformer import TransformerForTokenClassification
-from transformers import PreTrainedModel, HfArgumentParser,AutoConfig
+from deep_training.nlp.models.transformer import TransformerForTokenClassification, TransformerForCausalLM
+from transformers import PreTrainedModel, HfArgumentParser, AutoConfig, AdamW
 
 from config import reward_config
 
@@ -19,11 +19,12 @@ from config import reward_config
 load_in_8bit = False
 
 
-class MyRewardModel(TransformerForTokenClassification):
+class MyRewardModel(TransformerForCausalLM):
     def __init__(self, *args, **kwargs):
         if load_in_8bit:
             kwargs.update({"load_in_8bit": True, "device_map": "auto"})
         super(MyRewardModel, self).__init__(*args, **kwargs)
+        self.score = nn.Linear(self.config.hidden_size, self.config.num_labels)
 
     def forward_reward(self,**batch):
         value = self.model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])[0]
@@ -150,17 +151,26 @@ class MyPPOTransformer(MyRewardModel,PPOModelBase, with_pl=True):
 
     def configure_optimizers(self):
         p = self.get_named_parameters(self.backbone)
-        opt = configure_optimizers(p, self.training_args,
-                                    self.trainer.estimated_stepping_batches)
+        training_args = self.training_args
+        optimizer = AdamW(p, lr=training_args.learning_rate,
+                          eps=training_args.adam_epsilon,
+                          betas=training_args.optimizer_betas,
+                          weight_decay=training_args.weight_decay
+                          )
+        return optimizer
 
-        o = {}
-        if len(opt) == 2:
-            o['optimizer'] = opt[0][0]
-            o['scheduler'] = opt[1][0]
-        else:
-            o['optimizer'] = opt[0]
 
-        return (o,)
+        # opt = configure_optimizers(p, self.training_args,
+        #                             self.trainer.estimated_stepping_batches)
+        #
+        # o = {}
+        # if len(opt) == 2:
+        #     o['optimizer'] = opt[0][0]
+        #     o['scheduler'] = opt[1][0]
+        # else:
+        #     o['optimizer'] = opt[0]
+        #
+        # return (o,)
 
     def training_step(self, batch):
         outputs = self.compute_loss(**batch)
