@@ -10,7 +10,7 @@ from deep_training.nlp.rl.ppo.ppo_module import PPOModelBase
 from deep_training.nlp.utils import configure_optimizers
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
-from deep_training.nlp.models.transformer import TransformerForTokenClassification, TransformerForCausalLM
+from deep_training.nlp.models.transformer import TransformerForCausalLM
 from transformers import PreTrainedModel, HfArgumentParser, AutoConfig, AdamW
 
 from config import reward_config
@@ -25,6 +25,7 @@ class MyRewardModel(TransformerForCausalLM):
             kwargs.update({"load_in_8bit": True, "device_map": "auto"})
         super(MyRewardModel, self).__init__(*args, **kwargs)
         self.score = nn.Linear(self.config.hidden_size, self.config.num_labels)
+        self.model.enable_input_require_grads()
 
     def forward_reward(self,**batch):
         value = self.model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])[0]
@@ -143,11 +144,15 @@ class MyPPOTransformer(MyRewardModel,PPOModelBase, with_pl=True):
             self.set_model(model, copy_attr=False)
 
 
+
     def get_llm_model(self) -> PreTrainedModel:
         if self.lora_args is not None and self.lora_args.with_lora:
             return self.backbone.model.model
         return self.backbone.model
 
+    @torch.no_grad()
+    def generate(self,*args,**kwargs):
+        return self.get_llm_model().generate(*args,**kwargs)
 
     def configure_optimizers(self):
         p = self.get_named_parameters(self.backbone)

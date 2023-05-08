@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     ref_model = MyRewardTransformer = load_reward_model('../reward/best_ckpt')
 
-    strategy = 'ddp' if torch.cuda.device_count() > 1 else 'auto'
+    strategy = 'ddp' if torch.cuda.device_count() >= 1 else 'auto'
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     if data_args.do_test:
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
-    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args)
+
 
 
     from models import load_ref_model,load_reward_model
@@ -122,6 +122,9 @@ if __name__ == '__main__':
         original_samples = [p + o + tokenizer.eos_token for p, o in zip(prompts, original_output)]
         original_rewards = get_reward(original_samples)
         return rewards - original_rewards
+
+
+    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args)
 
     ckpt_path = './best_ckpt/best.pt'
     if not data_args.convert_onnx:
