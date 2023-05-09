@@ -75,19 +75,25 @@ class NN_DataHelper(DataHelper):
     def collate_fn(self, batch):
         o = {}
 
-        keep_keys = ['seqlen','input_ids','attention_mask']
+        merge_keys = ['seqlen','input_ids','attention_mask']
+        batch = copy.copy(batch)
         for i, b in enumerate(batch):
             if i == 0:
                 for k in b:
-                    if k in keep_keys:
+                    if k in merge_keys:
                         o[k] = [torch.tensor(b[k])]
+                    else:
+                        o[k] = [copy.deepcopy(b[k])]
 
             else:
                 for k in b:
-                    if k in keep_keys:
+                    if k in merge_keys:
                         o[k].append(torch.tensor(b[k]))
+                    else:
+                        o[k].append(copy.deepcopy(b[k]))
+
         for k in o:
-            if k in keep_keys:
+            if k in merge_keys:
                 o[k] = torch.stack(o[k])
 
         maxlen = torch.max(o.pop('seqlen'))

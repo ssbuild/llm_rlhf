@@ -65,7 +65,7 @@ class TokenIds:
 
     @classmethod
     def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_new_tokens: int):
-        prompt, label = pair_data
+        prompt, labels = pair_data
 
         max_prompt_length = max_seq_length - max_new_tokens
 
@@ -81,8 +81,8 @@ class TokenIds:
             attention_mask = np.pad(attention_mask, (0, pad_len), 'constant', constant_values=(0, 0))
 
         return {
-            "prompt": np.array(bytes(prompt,encoding='utf-8'),dtype=np.bytes),
-            "label": np.array(bytes(label, encoding='utf-8')),
+            "prompt": np.array(bytes(prompt,encoding='utf-8')),
+            "org_labels": np.array(bytes(labels, encoding='utf-8')),
             "input_ids": input_ids,
             "attention_mask": attention_mask,
             "seqlen": np.asarray(seqlen, dtype=np.int32),

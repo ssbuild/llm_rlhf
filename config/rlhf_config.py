@@ -51,8 +51,9 @@ adalora_info_args = {
 ppp_info_args = {
     "model_arch_type": "causal" , # one of causal , seq2seq
     "ppo_epochs": 2, # Number of updates per batch
-    "num_rollouts": 128, # Number  of experiences to observe before learning
-    "chunk_size": 128, # Number of chunk_size of training
+    "num_rollouts": 32, # Number  of experiences to observe before learning
+    "chunk_size": 2, # Number of chunk_size of training
+    "minibatch_size": None,
     "init_kl_coef": 0.001, # Initial value for KL coefficient
     "target": None, # Target value for KL coefficient
     "horizon": 10000, # Number of steps for KL coefficient to reach target
@@ -75,6 +76,7 @@ ppp_info_args = {
         do_sample=True,
     ),
     "gen_experience_kwargs": None, # Additioanl kwargs for the gen_experience_kwargs
+
 }
 
 

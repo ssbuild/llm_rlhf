@@ -14,7 +14,7 @@ from transformers import HfArgumentParser
 
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
-from models import MyPPOTransformer, LoraArguments, LoraConfig, PPOArguments, PPOConfig, load_reward_model
+from models import MyPPOTransformer, LoraArguments, LoraConfig, PPOArguments, PPOConfig, load_reward_model,load_ref_model
 
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
 
@@ -33,14 +33,13 @@ if __name__ == '__main__':
     deepspeed_config = get_deepspeed_config()
 
 
-    ref_model = MyRewardTransformer = load_reward_model('../reward/best_ckpt')
 
     strategy = 'ddp' if torch.cuda.device_count() >= 1 else 'auto'
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
     trainer = PPOTrainer(
-        callbacks=[ LearningRateMonitor(logging_interval='step')],
+        # callbacks=[ LearningRateMonitor(logging_interval='step')],
         max_epochs=training_args.max_epochs,
         max_steps=training_args.max_steps,
         accelerator="gpu",
@@ -81,12 +80,7 @@ if __name__ == '__main__':
     if data_args.do_test:
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
-
-
-
-    from models import load_ref_model,load_reward_model
-
-    pl_ref_model = load_reward_model('../reward/best_ckpt')
+    pl_ref_model = load_ref_model('../reward/best_ckpt')
 
     pl_reward_model = load_reward_model('../reward/best_ckpt')
     reward_device = torch.cuda.device_count() - 1
@@ -99,7 +93,7 @@ if __name__ == '__main__':
             samples,
             padding=True,
             truncation=True,
-            max_length=tokenizer.max_len_single_sentence,
+            max_length=data_args.max_seq_length,
             return_tensors="pt",
         ).to(reward_device)
 
@@ -108,23 +102,28 @@ if __name__ == '__main__':
         for i in range(math.ceil(len(samples) / mbs)):
             batch_ixs = slice(i * mbs, (i + 1) * mbs)
             input_ids = input.input_ids[batch_ixs]
-            rewards = pl_reward_model(input_ids)
+
+            rewards = pl_reward_model.forward_returns(**{
+                "input_ids": input_ids
+            })
             out.extend(rewards)
         return torch.hstack(out)
 
-    def reward_fn(samples, prompts, original_output, **kwargs):
+    def reward_fn(samples, prompts, org_labels, **kwargs):
+        org_labels = [str(l, encoding='utf-8') for l in org_labels]
         samples = [s + tokenizer.eos_token for s in samples]
         rewards = get_reward(samples)
 
         if not delta_reward:
             return rewards
 
-        original_samples = [p + o + tokenizer.eos_token for p, o in zip(prompts, original_output)]
+        original_samples = [p + o + tokenizer.eos_token for p, o in zip(prompts, org_labels)]
         original_rewards = get_reward(original_samples)
         return rewards - original_rewards
 
 
-    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args)
+    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args,
+                                lora_args=lora_args,ppo_args=ppo_args)
 
     ckpt_path = './best_ckpt/best.pt'
     if not data_args.convert_onnx:
@@ -142,13 +141,14 @@ if __name__ == '__main__':
             dataHelper.train_files,
             with_load_memory=True,
             collate_fn=dataHelper.collate_fn,
-            batch_size=training_args.train_batch_size,
+            # batch_size=training_args.train_batch_size,
+            batch_size=ppo_args.chunk_size,
             drop_last=True,  # 多卡建议扔掉
             num_processes=trainer.world_size, process_index=trainer.global_rank)
 
         if train_datasets is not None:
             trainer.fit(pl_model,
-                        ref_model=ref_model,
+                        ref_model=pl_ref_model,
                         train_loader=train_datasets,
                         tokenizer=tokenizer,
                         reward_fn=reward_fn,
