@@ -1,27 +1,19 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/4/20 17:08
-
+import copy
 import logging
 import math
 
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
 from deep_training.utils.trainer import SimpleModelCheckpoint
-
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
-
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
 from models import MyPPOTransformer, LoraArguments, LoraConfig, PPOArguments, PPOConfig, load_reward_model,load_ref_model
-
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
-
-
-
-
-
 
 
 if __name__ == '__main__':
@@ -80,7 +72,7 @@ if __name__ == '__main__':
     if data_args.do_test:
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
-    pl_ref_model = load_ref_model('../reward/best_ckpt')
+
 
     pl_reward_model = load_reward_model('../reward/best_ckpt')
     reward_device = torch.cuda.device_count() - 1
@@ -122,8 +114,16 @@ if __name__ == '__main__':
         return rewards - original_rewards
 
 
-    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args,
+    pl_model = MyPPOTransformer(config=config,
+                                model_args=model_args,
+                                training_args=training_args,
                                 lora_args=lora_args,ppo_args=ppo_args)
+
+    # pl_ref_model = load_ref_model('../reward/best_ckpt')
+    pl_ref_model = copy.deepcopy(pl_model)
+    pl_ref_model.eval().half()
+    pl_ref_model.requires_grad_(False)
+
 
     ckpt_path = './best_ckpt/best.pt'
     if not data_args.convert_onnx:

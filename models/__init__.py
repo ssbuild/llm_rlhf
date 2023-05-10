@@ -6,7 +6,7 @@ from typing import List, Tuple, Optional, Union
 import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from deep_training.nlp.rl.ppo.configuration import PPOArguments, PPOConfig
-from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss
+from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss, CausalLMOutputWithValue
 from deep_training.nlp.utils import configure_optimizers
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
@@ -21,22 +21,11 @@ load_in_8bit = False
 
 
 
-@dataclass
-class CausalLMOutputWithValue(ModelOutput):
-    loss: Optional[torch.FloatTensor] = None
-    logits: Optional[torch.FloatTensor] = None
-    past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
-    hidden_states: Optional[Tuple[torch.FloatTensor]] = None
-    attentions: Optional[Tuple[torch.FloatTensor]] = None
-    cross_attentions: Optional[Tuple[torch.FloatTensor]] = None
-    value: Optional[torch.FloatTensor] = None
-
 class MyModelForCausalLMWithValueHead(TransformerForCausalLM):
     def __init__(self, *args, **kwargs):
         if load_in_8bit:
             kwargs.update({"load_in_8bit": True, "device_map": "auto"})
         super(MyModelForCausalLMWithValueHead, self).__init__(*args, **kwargs)
-
         # base_model_prefix = self.base_model_prefix[:-1] if self.base_model_prefix.endswith(
         #     '_') else self.base_model_prefix
         # self.transformer_bone = getattr(self.model, base_model_prefix, None)
@@ -53,11 +42,9 @@ class MyModelForCausalLMWithValueHead(TransformerForCausalLM):
             inputs.update({"return_dict": True})
         outputs = self.model(*args,**inputs,output_hidden_states=True)
         value = self.score(outputs.hidden_states[-1]).squeeze(-1)
-
         if not return_dict:
             outputs = (outputs.logits,) + outputs[1:] + (value,)
             return outputs
-
         return CausalLMOutputWithValue(**outputs, value=value)
 
 
@@ -92,12 +79,7 @@ class MyRewardModel(TransformerForCausalLM):
             rejected_id = rejected_ids[i]
             chosen_value = chosen_values[i]
             rejected_value = rejected_values[i]
-            # if torch.all(torch.eq(chosen_id, rejected_id)).item():
-            #     c_inds = (chosen_id == self.config.pad_token_id).nonzero()
-            #     c_ind = c_inds[0].item() if len(c_inds) > 0 else chosen_id.shape[0]
-            #     chosen_mean_scores.append(chosen_value[c_ind - 1])
-            #     inference = True
-            #     continue
+
             # Check if there is any padding otherwise take length of sequence
             c_inds = (chosen_id == self.config.pad_token_id).nonzero()
             c_ind = c_inds[0].item() if len(c_inds) > 0 else chosen_id.shape[0]
@@ -265,16 +247,16 @@ def load_reward_model(model_dir) ->MyRewardTransformer:
     return pl_module
 
 
-def load_ref_model(model_dir) ->MyPPOTransformer:
+def load_ref_model(lora_model_dir,ref_train_info_args) ->MyPPOTransformer:
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
-    model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
+    model_args, training_args, data_args, lora_args = parser.parse_dict(ref_train_info_args)
     lora_args = lora_args.config
-    config = AutoConfig.from_pretrained(model_dir)
+    config = AutoConfig.from_pretrained(lora_model_dir)
     # 加载权重
-    lora_args = LoraArguments.from_pretrained(model_dir)
+    lora_args = LoraArguments.from_pretrained(lora_model_dir)
     pl_module = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
     # 二次加载权重
-    pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=model_dir,lora_config=lora_args)
+    pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=lora_model_dir,lora_config=lora_args)
 
     pl_module.eval()
     pl_module.requires_grad_(False)

@@ -73,33 +73,25 @@ class NN_DataHelper(DataHelper):
         return D
 
     def collate_fn(self, batch):
-        o = {}
-
-        merge_keys = ['seqlen','input_ids','attention_mask']
+        merge_keys = ['input_ids','attention_mask']
         batch = copy.copy(batch)
+        o = {
+            k: []
+            for k in batch[0].keys()
+        }
         for i, b in enumerate(batch):
-            if i == 0:
-                for k in b:
-                    if k in merge_keys:
-                        o[k] = [torch.tensor(b[k])]
-                    else:
-                        o[k] = [copy.deepcopy(b[k])]
+            for k in b:
+                o[k].append(copy.deepcopy(b[k]))
 
-            else:
-                for k in b:
-                    if k in merge_keys:
-                        o[k].append(torch.tensor(b[k]))
-                    else:
-                        o[k].append(copy.deepcopy(b[k]))
-
-        for k in o:
-            if k in merge_keys:
-                o[k] = torch.stack(o[k])
-
-        maxlen = torch.max(o.pop('seqlen'))
-        o['input_ids'] = o['input_ids'][:, :maxlen]
-        o['attention_mask'] = o['attention_mask'][:, :maxlen]
-
+        o_pad = {
+            k: o[k] for k in merge_keys
+        }
+        tokenizer: PreTrainedTokenizer = self.tokenizer
+        o_pad = tokenizer.pad(o_pad,
+                              # max_length=self.data_args.train_max_seq_length,
+                              return_tensors="pt")
+        for k in o_pad:
+            o[k] = o_pad[k]
         return o
 
 

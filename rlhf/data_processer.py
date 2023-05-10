@@ -69,21 +69,13 @@ class TokenIds:
 
         max_prompt_length = max_seq_length - max_new_tokens
 
-        o = tokenizer.encode_plus(prompt, truncation=True, max_length=max_prompt_length)
+        o = tokenizer(prompt, truncation=True,padding=False, max_length=max_prompt_length)
         input_ids = np.asarray(o['input_ids'],dtype=np.int32)
         attention_mask = np.asarray(o['attention_mask'],dtype=np.int32)
-
-        seqlen = len(input_ids)
-        pad_val = tokenizer.pad_token_id
-        pad_len = max_prompt_length - seqlen
-        if pad_len:
-            input_ids = np.pad(input_ids, (0, pad_len), 'constant', constant_values=(pad_val, pad_val))
-            attention_mask = np.pad(attention_mask, (0, pad_len), 'constant', constant_values=(0, 0))
 
         return {
             "prompt": np.array(bytes(prompt,encoding='utf-8')),
             "org_labels": np.array(bytes(labels, encoding='utf-8')),
             "input_ids": input_ids,
             "attention_mask": attention_mask,
-            "seqlen": np.asarray(seqlen, dtype=np.int32),
         }

@@ -48,9 +48,10 @@ class MySimpleModelCheckpoint(SimpleModelCheckpoint):
         if lora_args is None:
             super(MySimpleModelCheckpoint, self).on_save_model(trainer, pl_module)
         else:
-            logging.info('save weight step {}'.format(trainer.global_step))
             # 保存最新权重
-            pl_module.backbone.save_pretrained(self.last_weight_file)
+            logging.info('step {} saving model'.format(trainer.global_step))
+            # 保存最新权重
+            pl_module.backbone.save_pretrained(self.weight_file)
 
 
 if __name__ == '__main__':
