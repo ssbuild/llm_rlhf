@@ -176,7 +176,6 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
 
 
 class MyPPOTransformer(MyModelForCausalLMWithValueHead,PPOModelLoss, with_pl=True):
-
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         ppo_args: PPOConfig = kwargs.pop('ppo_args', None)
@@ -206,8 +205,7 @@ class MyPPOTransformer(MyModelForCausalLMWithValueHead,PPOModelLoss, with_pl=Tru
         optimizer = AdamW(p, lr=training_args.learning_rate,
                           eps=training_args.adam_epsilon,
                           betas=training_args.optimizer_betas,
-                          weight_decay=training_args.weight_decay
-                          )
+                          weight_decay=training_args.weight_decay)
         return optimizer
 
 
@@ -238,10 +236,8 @@ def load_reward_model(model_dir) ->MyRewardTransformer:
     # 加载权重
     lora_args = LoraArguments.from_pretrained(model_dir)
     pl_module = MyRewardTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
-    # 二次加载权重
+    # 加载lora权重
     pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=model_dir,lora_config=lora_args)
-
-
     pl_module.eval()
     pl_module.requires_grad_(False)
     return pl_module
@@ -257,7 +253,6 @@ def load_ref_model(lora_model_dir,ref_train_info_args) ->MyPPOTransformer:
     pl_module = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
     # 二次加载权重
     pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=lora_model_dir,lora_config=lora_args)
-
     pl_module.eval()
     pl_module.requires_grad_(False)
     return pl_module
