@@ -6,7 +6,7 @@ import math
 
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
-from deep_training.utils.trainer import SimpleModelCheckpoint
+from deep_training.utils.trainer import SimpleModelCheckpointFabric
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
@@ -14,6 +14,31 @@ from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOK
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
 from models import MyPPOTransformer, LoraArguments, LoraConfig, PPOArguments, PPOConfig, load_reward_model,load_ref_model
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
+
+class MySimpleModelCheckpoint(SimpleModelCheckpointFabric):
+    def __init__(self, *args, **kwargs):
+        super(MySimpleModelCheckpoint, self).__init__(*args, **kwargs)
+        lora_args:LoraConfig= self.external_kwargs['lora_args']
+        if lora_args is not None:
+            self.weight_file = './best_ckpt'
+            self.last_weight_file = './last_ckpt'
+
+
+
+
+    def on_save_model(
+            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+
+        lora_args : LoraArguments =  self.external_kwargs['lora_args']
+        # 保存权重
+        if lora_args is None:
+            super(MySimpleModelCheckpoint, self).on_save_model(trainer, pl_module)
+        else:
+            # 保存最新权重
+            logging.info('step {} saving model'.format(trainer.global_step))
+            # 保存最新权重
+            pl_module.backbone.save_pretrained(self.weight_file)
 
 
 if __name__ == '__main__':
@@ -24,14 +49,22 @@ if __name__ == '__main__':
 
     deepspeed_config = get_deepspeed_config()
 
-
+    checkpoint_callback = MySimpleModelCheckpoint(
+        # monitor="loss",
+        save_weights_only=True,
+        every_n_epochs=1,
+        every_n_train_steps=1000 // training_args.gradient_accumulation_steps,
+        # 模型参数
+        model_args=model_args,
+        training_args=training_args,
+        lora_args=lora_args, )
 
     strategy = 'ddp' if torch.cuda.device_count() >= 1 else 'auto'
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
     trainer = PPOTrainer(
-        # callbacks=[ LearningRateMonitor(logging_interval='step')],
+        callbacks=[ checkpoint_callback],
         max_epochs=training_args.max_epochs,
         max_steps=training_args.max_steps,
         accelerator="gpu",
@@ -76,7 +109,7 @@ if __name__ == '__main__':
 
     pl_reward_model = load_reward_model('../reward/best_ckpt')
     reward_device = torch.cuda.device_count() - 1
-    pl_reward_model = pl_reward_model.half().to(reward_device)
+    pl_reward_model = pl_reward_model.to(reward_device)
     reward_batch_size = 48
     delta_reward = True
 
@@ -95,9 +128,11 @@ if __name__ == '__main__':
             batch_ixs = slice(i * mbs, (i + 1) * mbs)
             input_ids = input.input_ids[batch_ixs]
 
+
             rewards = pl_reward_model.forward_returns(**{
                 "input_ids": input_ids
             })
+            print('rewards',rewards)
             out.extend(rewards)
         return torch.hstack(out)
 
@@ -105,12 +140,13 @@ if __name__ == '__main__':
         org_labels = [str(l, encoding='utf-8') for l in org_labels]
         samples = [s + tokenizer.eos_token for s in samples]
         rewards = get_reward(samples)
-
+        print('1111',rewards)
         if not delta_reward:
             return rewards
 
         original_samples = [p + o + tokenizer.eos_token for p, o in zip(prompts, org_labels)]
         original_rewards = get_reward(original_samples)
+        print('2222', original_rewards)
         return rewards - original_rewards
 
 

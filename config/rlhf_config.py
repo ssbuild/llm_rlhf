@@ -144,7 +144,7 @@ train_info_args = {
     'max_seq_length':  256, #
     'max_target_length': 100,  # 预测最大长度
     'use_fast_tokenizer': False,
-    'do_lower_case': False,
+    
 
     ##############  lora模块
     'lora': {**lora_info_args},

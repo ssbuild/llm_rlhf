@@ -124,6 +124,7 @@ class MyRewardModel(TransformerForCausalLM):
     def forward_returns(self, **inputs):
         input_ids = inputs['input_ids']
         rewards = self.forward_reward(**inputs)
+        print('***********',rewards)
         ends = torch.argmax((input_ids == self.config.eos_token_id).float(), dim=1).view(-1, 1)
         returns = torch.gather(rewards, 1, ends).squeeze(-1)
         return returns
@@ -171,7 +172,8 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
     def forward_returns(self,*args,**kwargs):
         if self.lora_args is not None and self.lora_args.with_lora:
             model = self.backbone.model
-        model = self.backbone
+        else:
+            model = self.backbone
         return model.forward_returns(*args,**kwargs)
 
 
