@@ -4,7 +4,7 @@
     llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
 
 ## 1. 安装
-    pip install --pre -U deep_training>0.1.5
+    pip install --pre -U deep_training>=0.1.5
 
 
 ## 2.更新详情
