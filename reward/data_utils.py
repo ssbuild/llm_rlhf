@@ -17,7 +17,7 @@ from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gf
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
 from config.reward_config import *
-
+from torch.nn import functional as F
 
 def preprocess(text):
   return text
@@ -70,29 +70,27 @@ class NN_DataHelper(DataHelper):
         return D
 
     def collate_fn(self, batch):
-        o = {}
+        o = {k: [] for k in batch[0].keys()}
         for i, b in enumerate(batch):
-            if i == 0:
-                for k in b:
-                    o[k] = [torch.tensor(b[k])]
-            else:
-                for k in b:
-                    o[k].append(torch.tensor(b[k]))
-        for k in o:
-            o[k] = torch.stack(o[k])
-
-        maxlen = torch.max(o.pop('seqlen'))
+            for k in b:
+                o[k].append(torch.tensor(b[k]))
+        seqlen = np.max([len(_) for _ in o['input_ids']])
         flag = False
-        if 'seqlen2' in o:
+        if 'input_ids2' in o:
             flag = True
-            maxlen = torch.max(maxlen,torch.max(o.pop('seqlen2')))
+            seqlen = np.max([seqlen] + [len(_) for _ in o['input_ids2']])
 
-        o['input_ids'] = o['input_ids'][:, :maxlen]
-        o['attention_mask'] = o['attention_mask'][:, :maxlen]
+        tokenizer: PreTrainedTokenizer = self.tokenizer
+        pad_val = tokenizer.pad_token_id
+
+        o['input_ids'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in o['input_ids']])
+        o['attention_mask'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=0) for _ in
+                               o['attention_mask']])
 
         if flag:
-            o['input_ids2'] = o['input_ids2'][:, :maxlen]
-            o['attention_mask2'] = o['attention_mask2'][:, :maxlen]
+            o['input_ids2'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in o['input_ids2']])
+            o['attention_mask2'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=0) for _ in
+                                    o['attention_mask2']])
 
         return o
 

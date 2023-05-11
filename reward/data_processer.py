@@ -106,22 +106,23 @@ class TokenIds:
             if np.all(input_ids_a == input_ids_b):
                 return None
 
-        pad_val = tokenizer.pad_token_id
-        pad_len = max_seq_length - seqlen_a
-        if pad_len:
-            input_ids_a = np.pad(input_ids_a, (0, pad_len), 'constant', constant_values=(pad_val, pad_val))
-            attention_mask_a = np.pad(attention_mask_a, (0, pad_len), 'constant', constant_values=(0, 0))
-
-        pad_len = max_seq_length - seqlen_b
-        if pad_len:
-            input_ids_b = np.pad(input_ids_b, (0, pad_len), 'constant', constant_values=(pad_val, pad_val))
-            attention_mask_b = np.pad(attention_mask_b, (0, pad_len), 'constant', constant_values=(0, 0))
+        #改为动态填充
+        # pad_val = tokenizer.pad_token_id
+        # pad_len = max_seq_length - seqlen_a
+        # if pad_len:
+        #     input_ids_a = np.pad(input_ids_a, (0, pad_len), 'constant', constant_values=(pad_val, pad_val))
+        #     attention_mask_a = np.pad(attention_mask_a, (0, pad_len), 'constant', constant_values=(0, 0))
+        #
+        # pad_len = max_seq_length - seqlen_b
+        # if pad_len:
+        #     input_ids_b = np.pad(input_ids_b, (0, pad_len), 'constant', constant_values=(pad_val, pad_val))
+        #     attention_mask_b = np.pad(attention_mask_b, (0, pad_len), 'constant', constant_values=(0, 0))
 
         return {
             "input_ids": input_ids_a,
             "attention_mask": attention_mask_a,
-            "seqlen": np.asarray(seqlen_a,dtype=np.int32),
+            # "seqlen": np.asarray(seqlen_a,dtype=np.int32),
             "input_ids2": input_ids_b,
             "attention_mask2": attention_mask_b,
-            "seqlen2": np.asarray(seqlen_b, dtype=np.int32),
+            # "seqlen2": np.asarray(seqlen_b, dtype=np.int32),
         }
