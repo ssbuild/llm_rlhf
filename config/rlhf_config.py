@@ -49,7 +49,7 @@ adalora_info_args = {
 
 
 ppp_info_args = {
-    "model_arch_type": "causal" , # one of causal , seq2seq
+    "model_arch_type": "causal" , # one of one of causal, prefixlm,seq2seq
     "ppo_epochs": 2, # Number of updates per batch
     "num_rollouts": 128, # Number  of experiences to observe before learning
     "chunk_size": 1, # Number of chunk_size of training

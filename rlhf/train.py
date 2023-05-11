@@ -127,12 +127,9 @@ if __name__ == '__main__':
         for i in range(math.ceil(len(samples) / mbs)):
             batch_ixs = slice(i * mbs, (i + 1) * mbs)
             input_ids = input.input_ids[batch_ixs]
-
-
             rewards = pl_reward_model.forward_returns(**{
                 "input_ids": input_ids
             })
-            print('rewards',rewards)
             out.extend(rewards)
         return torch.hstack(out)
 
@@ -140,13 +137,11 @@ if __name__ == '__main__':
         org_labels = [str(l, encoding='utf-8') for l in org_labels]
         samples = [s + tokenizer.eos_token for s in samples]
         rewards = get_reward(samples)
-        print('1111',rewards)
         if not delta_reward:
             return rewards
 
         original_samples = [p + o + tokenizer.eos_token for p, o in zip(prompts, org_labels)]
         original_rewards = get_reward(original_samples)
-        print('2222', original_rewards)
         return rewards - original_rewards
 
 

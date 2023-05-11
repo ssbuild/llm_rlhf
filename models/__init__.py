@@ -15,38 +15,10 @@ from torch.optim import AdamW
 from transformers import PreTrainedModel, HfArgumentParser, AutoConfig
 from transformers.utils import ModelOutput
 from config import reward_config
+from deep_training.nlp.models.rl.modeling import AutoModelForCausalLMWithValueHead
 
 #如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
 load_in_8bit = False
-
-
-
-class MyModelForCausalLMWithValueHead(TransformerForCausalLM):
-    def __init__(self, *args, **kwargs):
-        if load_in_8bit:
-            kwargs.update({"load_in_8bit": True, "device_map": "auto"})
-        super(MyModelForCausalLMWithValueHead, self).__init__(*args, **kwargs)
-        # base_model_prefix = self.base_model_prefix[:-1] if self.base_model_prefix.endswith(
-        #     '_') else self.base_model_prefix
-        # self.transformer_bone = getattr(self.model, base_model_prefix, None)
-        # assert self.transformer_bone is not None
-        self.score = nn.Linear(self.config.hidden_size, self.config.num_labels)
-        self.model.enable_input_require_grads()
-
-    def generate(self, *args, **kwargs) -> Union[ModelOutput, torch.LongTensor]:
-        return self.model.generate(*args, **kwargs)
-
-    def forward(self, *args, **inputs):
-        return_dict = inputs.get('return_dict',False)
-        if not return_dict:
-            inputs.update({"return_dict": True})
-        outputs = self.model(*args,**inputs,output_hidden_states=True)
-        value = self.score(outputs.hidden_states[-1]).squeeze(-1)
-        if not return_dict:
-            outputs = (outputs.logits,) + outputs[1:] + (value,)
-            return outputs
-        return CausalLMOutputWithValue(**outputs, value=value)
-
 
 
 
@@ -124,7 +96,6 @@ class MyRewardModel(TransformerForCausalLM):
     def forward_returns(self, **inputs):
         input_ids = inputs['input_ids']
         rewards = self.forward_reward(**inputs)
-        print('***********',rewards)
         ends = torch.argmax((input_ids == self.config.eos_token_id).float(), dim=1).view(-1, 1)
         returns = torch.gather(rewards, 1, ends).squeeze(-1)
         return returns
@@ -177,7 +148,7 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
         return model.forward_returns(*args,**kwargs)
 
 
-class MyPPOTransformer(MyModelForCausalLMWithValueHead,PPOModelLoss, with_pl=True):
+class MyPPOTransformer(AutoModelForCausalLMWithValueHead,PPOModelLoss, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         ppo_args: PPOConfig = kwargs.pop('ppo_args', None)
