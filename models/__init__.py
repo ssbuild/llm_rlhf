@@ -142,12 +142,17 @@ class MyRewardModel(TransformerForCausalLM):
         returns = torch.gather(rewards, 1, ends).squeeze(-1)
         return returns
 
+    def compute_loss(self, *args, return_value_only=False, **batch) -> tuple:
+        input_a, input_b = {}, {}
+        for k, v in batch.items():
+            i, k = (input_b, k[:-1]) if k.endswith('2') else (input_a, k)
+            i[k] = v
 
-    def compute_loss(self, *args,return_value_only=False,**batch) -> tuple:
-        value_a = self.forward_reward(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])
-        if 'input_ids2' in batch:
-            value_b = self.forward_reward(input_ids=batch["input_ids2"], attention_mask=batch["attention_mask2"])
-            loss,chosen_mean_scores,rejected_mean_scores = self.forward_loss(batch["input_ids"],value_a,batch["input_ids2"],value_b)
+        value_a = self.forward_reward(**input_a)
+        if len(input_b) > 0:
+            value_b = self.forward_reward(**input_b)
+            loss, chosen_mean_scores, rejected_mean_scores = self.forward_loss(input_a["input_ids"], value_a,
+                                                                               input_b["input_ids"], value_b)
             loss_dict = {
                 "loss": loss,
                 "chosen_mean_scores": chosen_mean_scores.mean(),
@@ -155,12 +160,12 @@ class MyRewardModel(TransformerForCausalLM):
             }
             if self.training:
                 return (loss_dict,)
-            return (loss,value_a,value_b)
+            return (loss, value_a, value_b)
 
-        values,chosen_mean_scores = self.forward_value(batch["input_ids"],value_a)
+        values, chosen_mean_scores = self.forward_value(batch["input_ids"], value_a)
         if return_value_only:
             return (values,)
-        return (values,chosen_mean_scores)
+        return (values, chosen_mean_scores)
 
 
 
