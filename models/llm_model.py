@@ -71,15 +71,21 @@ class Generate:
 
 class MyRewardModel(TransformerForCausalLM):
     def __init__(self, *args, **kwargs):
-        if load_in_8bit:
-            kwargs.update({"load_in_8bit": True, "device_map": "auto"})
+        # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+        load_in_8bit = kwargs.get('load_in_8bit', False)
+        if not load_in_8bit:
+            kwargs.pop("device_map", None)
         super(MyRewardModel, self).__init__(*args, **kwargs)
 
         base_model_prefix = self.base_model_prefix[:-1] if self.base_model_prefix.endswith('_') else self.base_model_prefix
         self.transformer_bone = getattr(self.model,base_model_prefix,None)
         assert self.transformer_bone is not None
         self.score = nn.Linear(self.config.hidden_size, self.config.num_labels)
-        self.model.enable_input_require_grads()
+
+        if load_in_8bit:
+            setattr(self.model, 'model_parallel', True)
+            setattr(self.model, 'is_parallelizable', True)
+            self.model.enable_input_require_grads()
 
     def forward_reward(self,**batch):
         state = self.transformer_bone(**batch)[0]
@@ -171,3 +177,18 @@ class MyRewardModel(TransformerForCausalLM):
         if return_value_only:
             return (values,)
         return (values, chosen_mean_scores)
+
+
+
+class MyAutoModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
+    def __init__(self,*args,**kwargs):
+        # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+        load_in_8bit = kwargs.get('load_in_8bit', False)
+        if not load_in_8bit:
+            kwargs.pop("device_map", None)
+        super(MyAutoModelForCausalLMWithValueHead, self).__init__(*args,**kwargs)
+
+        if load_in_8bit:
+            setattr(self.model, 'model_parallel', True)
+            setattr(self.model, 'is_parallelizable', True)
+            self.model.enable_input_require_grads()

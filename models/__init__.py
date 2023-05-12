@@ -31,7 +31,7 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
         return model.forward_returns(*args,**kwargs)
 
 
-class MyPPOTransformer(AutoModelForCausalLMWithValueHead,PPOModelLoss, with_pl=True):
+class MyPPOTransformer(MyAutoModelForCausalLMWithValueHead,PPOModelLoss, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         ppo_args: PPOConfig = kwargs.pop('ppo_args', None)
