@@ -183,7 +183,8 @@ if __name__ == '__main__':
                         train_loader=train_datasets,
                         tokenizer=tokenizer,
                         reward_fn=reward_fn,
-                        ppo_config=ppo_args
+                        ppo_config=ppo_args,
+                        stop_sequences=["Human:", "human:", "Assistant:", "assistant:"],
                         )
 
     else:
