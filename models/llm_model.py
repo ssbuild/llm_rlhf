@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Union
 import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from deep_training.nlp.rl.ppo.configuration import PPOArguments, PPOConfig
-from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss, CausalLMOutputWithValue
+from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss
 from deep_training.nlp.utils import configure_optimizers
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
@@ -16,9 +16,8 @@ from torch.optim import AdamW
 from transformers import PreTrainedModel, HfArgumentParser, AutoConfig
 from transformers.utils import ModelOutput
 from config import reward_config
-from deep_training.nlp.models.rl.modeling import AutoModelForCausalLMWithValueHead
+from deep_training.nlp.models.rl.modeling_ppo import AutoModelForCausalLMWithValueHead,CausalLMOutputWithValue
 
-#如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
 load_in_8bit = False
 
 
@@ -180,13 +179,13 @@ class MyRewardModel(TransformerForCausalLM):
 
 
 
-class MyAutoModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
+class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
     def __init__(self,*args,**kwargs):
         # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
         load_in_8bit = kwargs.get('load_in_8bit', False)
         if not load_in_8bit:
             kwargs.pop("device_map", None)
-        super(MyAutoModelForCausalLMWithValueHead, self).__init__(*args,**kwargs)
+        super(PPOModelForCausalLMWithValueHead, self).__init__(*args, **kwargs)
 
         if load_in_8bit:
             setattr(self.model, 'model_parallel', True)

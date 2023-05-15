@@ -1,11 +1,9 @@
 
 
 ## 注意事项
-    llama 要求transformers >= 4.28 llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
+    llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
     python >= 3.10
 
-## 安装
-    pip install -U deep_training>=0.1.5
 
 
 ## 更新详情

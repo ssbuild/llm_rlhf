@@ -2,11 +2,13 @@
 # @Time    : 2023/4/20 17:09
 
 import json
+from typing import Union, Iterable, List
 
 import numpy as np
 import torch
+from deep_training.nlp.rl.ilql.ilql_dataset import DialogMessage
 from tqdm import tqdm
-from transformers import PreTrainedTokenizer
+from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 
 DEFAULT_PAD_TOKEN = "[PAD]"
 DEFAULT_EOS_TOKEN = "</s>"
@@ -34,38 +36,69 @@ class CorpusPreprocess:
             if chosen == rejected:
                 print('warning text_a == text_b and it will be ingored')
                 continue
-            D.append((prompt, chosen))
+            D.append((prompt, chosen, prompt, rejected,1.0,-1.0))
         return D
 
 
+def tokenize_dialogue(  # noqa: C901
+    dialogue: Union[str, Iterable[str]], tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast], max_length=2048
+) -> List[DialogMessage]:
+    """
+    Tokenize sample with the interleaved form of (prompt_1, output_1, prompt_2, output_2...)
+    """
+    if isinstance(dialogue, str):
+        bos_token = tokenizer.bos_token or tokenizer.eos_token
+        dialogue = [bos_token, dialogue]
+    elif isinstance(dialogue, Iterable):
+        if len(dialogue) % 2 != 0:
+            raise ValueError("Dialogue must have an even number of phrases, alternating prompt and output")
+        dialogue = list(dialogue)
+
+    if not dialogue[-1].endswith(tokenizer.eos_token):
+        dialogue[-1] = dialogue[-1] + tokenizer.eos_token
+
+    tokenized = [
+        DialogMessage(is_output=i % 2 == 1, tokens=tuple(tokenizer(dialogue[i], add_special_tokens=False).input_ids))
+        for i in range(len(dialogue))
+    ]
+
+    # flip to truncate from the left
+    if tokenizer.truncation_side == "left":
+        tokenized = [DialogMessage(is_output=m.is_output, tokens=m.tokens[::-1]) for m in tokenized[::-1]]
+
+    # truncate if necessary
+    lengths = [len(t.tokens) for t in tokenized]
+    cumsum_lengths = [sum(lengths[:i]) for i in range(len(lengths))]
+    truncated = [
+        DialogMessage(is_output=t.is_output, tokens=t.tokens[: max(max_length - cl, 0)])
+        for t, cl in zip(tokenized, cumsum_lengths)
+    ]
+
+    # flip back if was fliped to left truncate
+    if tokenizer.truncation_side == "left":
+        truncated = [DialogMessage(is_output=m.is_output, tokens=m.tokens[::-1]) for m in truncated[::-1]]
+
+    # remove empty messages
+    out = [t for t in truncated if len(t.tokens) > 0]
+
+    if out[0].is_output:
+        if sum(map(lambda msg: len(msg.tokens), out)) == max_length:
+            if tokenizer.truncation_side == "left":
+                out[0].tokens = out[0].tokens[1:]
+            else:
+                out[-1].tokens = out[-1].tokens[:-1]
+
+        out.insert(0, DialogMessage(False, (tokenizer.bos_token_id,)))
+    return out
+
 class TokenIds:
-
-    # @classmethod
-    # def get_prompt(cls,prompt,tokenizer: PreTrainedTokenizer,max_seq_length: int):
-    #     """
-    #     Get the prompt after T5 decoding to make sure dictionary
-    #     of prompts and summaries is consistent decode prompt from trlX pipeline
-    #     """
-    #     assert max_seq_length > 5
-    #     tmp = tokenizer.decode(
-    #         tokenizer(
-    #             prompt.split("TL;DR:")[0],
-    #             truncation=True,
-    #             max_length=max_seq_length - 5,  # to make sure "TL;DR" dont get truncated
-    #             add_special_tokens=False,
-    #         )["input_ids"],
-    #         skip_special_tokens=True,
-    #     ).strip()
-    #     tmp = tmp + "\nTL;DR:"
-    #     formatted_prompt = tokenizer.decode(
-    #         tokenizer(tmp, truncation=True, max_length=max_seq_length, add_special_tokens=False)["input_ids"],
-    #         skip_special_tokens=True,
-    #     ).strip()
-    #     return formatted_prompt
-
     @classmethod
-    def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_new_tokens: int):
-        prompt, labels = pair_data
+    def process(cls,data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_new_tokens: int):
+        n = int(len(data) / 3 * 2)
+        dialogue = data[:n]
+        rewards = data[n:]
+
+        tokenize_dialogue(dialogue)
 
         max_prompt_length = max_seq_length - max_new_tokens
 

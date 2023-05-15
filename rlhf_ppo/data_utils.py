@@ -16,7 +16,7 @@ from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gf
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
 from models import LoraArguments,LoraConfig,PPOArguments,PPOConfig
-from config.rlhf_config import *
+from config.ppo_config import *
 
 
 
