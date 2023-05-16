@@ -37,7 +37,7 @@ class CorpusPreprocess:
                 print('warning text_a == text_b and it will be ingored')
                 continue
 
-            D.append((prompt, chosen, prompt, rejected,1.0,-1.0))
+            D.append((prompt, chosen,rejected))
         return D
 
 
@@ -95,44 +95,53 @@ def tokenize_dialogue(  # noqa: C901
 class TokenIds:
     @classmethod
     def process(cls,data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_new_tokens: int):
-        n = int(len(data) / 3 * 2)
-        dialogue = data[:n]
-        rewards = data[n:]
+        ds = []
+        prompt,chosen,rejected = data
+        if tokenizer.encode(chosen) == tokenizer.encode(rejected):
+            return None
+        for diaglogue in ((prompt, chosen, [1.0]),(prompt, rejected, [-1.0])):
+            rewards = diaglogue[-1]
+            dialogue = diaglogue[:-1]
 
-        sample = tokenize_dialogue(dialogue,tokenizer,max_seq_length)
+            sample = tokenize_dialogue(dialogue,tokenizer,max_seq_length)
+            returns = np.asarray(rewards, dtype=np.float32)
 
-        print('*' *30 , len(sample))
-        if len(sample) == 1:
-            print(dialogue)
-            print(rewards)
-            print(data)
+            length = 0
+            input_ids = np.asarray(sum((s.tokens for s in sample), ()),dtype=np.int32)
+            attention_mask = np.ones(len(input_ids), dtype=np.int32)
+            actions_ixs = []
+            for dm in sample:
+                if dm.is_output:
+                    actions_ixs.append(np.arange(length - 1, length + len(dm.tokens) - 1))
 
-        rewards = np.asarray(rewards, dtype=np.float32)
+                length += len(dm.tokens)
 
-        length = 0
-        input_ids = np.asarray(sample[0].tokens,dtype=np.int32)
-        output_ids = np.asarray(sample[1].tokens, dtype=np.int32)
-        attention_mask = np.ones(len(input_ids), dtype=np.int32)
-        actions_ixs = []
-        for phrase in sample:
-            if phrase.is_output:
-                length = len(phrase.tokens)
-                actions_ixs.append(np.arange(0, length - 1))
+            if not actions_ixs:
+                continue
 
-        states_ixs = np.hstack((*actions_ixs, np.asarray(length - 1)))
-        dones = np.asarray([1] * (len(states_ixs) - 1) + [0], dtype=np.int32)
-        actions_ixs = np.hstack(actions_ixs)
-        states_ixs = states_ixs
+            states_ixs = np.hstack((*actions_ixs, np.asarray(length - 1)))
+            dones = np.asarray([1] * (len(states_ixs) - 1) + [0], dtype=np.int32)
+            actions_ixs = np.hstack(actions_ixs)
 
-        # sample_lengths = np.asarray([len(input_ids),len(output_ids)])
-        # output_lengths =np.asarray([len(output_ids)])
-        # prompt_lengths = sample_lengths - output_lengths
-        return {
+            returns = returns - returns.mean()
+            std_returns = returns.std()
+            if not np.isnan(std_returns):
+                returns = returns / (std_returns + np.finfo(returns.dtype).eps)
+            rewards = [np.zeros(len(actions_ixs))]
+            for rs, ret in zip(rewards, returns):
+                rs[-1] = ret
+
+            # sample_lengths = np.array([len(input_ids)])
+            # output_lengths = np.array([len(actions_ixs)])
+            # prompt_lengths = sample_lengths - output_lengths
+            ds.append({
             "input_ids": input_ids,
             "attention_mask": attention_mask,
-            "output_ids": output_ids,
-            "rewards": rewards,
+            "rewards": returns,
             "actions_ixs": actions_ixs,
             "states_ixs": states_ixs,
             "dones": dones,
-        }
+        })
+        if not ds:
+            return None
+        return ds

@@ -56,8 +56,8 @@ class NN_DataHelper(DataHelper):
         config = self.config
         max_seq_length = self.max_seq_length_dict[mode]
 
-        ilq_args:ILQLConfig = self.external_kwargs['ilq_args']
-        max_new_tokens = ilq_args.gen_kwargs['max_new_tokens']
+        ilql_args:ILQLConfig = self.external_kwargs['ilql_args']
+        max_new_tokens = ilql_args.gen_kwargs['max_new_tokens']
         tokenizer = self.tokenizer
 
         pair_data = data
@@ -89,25 +89,25 @@ class NN_DataHelper(DataHelper):
 
         tokenizer: PreTrainedTokenizer = self.tokenizer
 
-        return ILQLBatch(
-            pad_sequence([x.input_ids for x in o], batch_first=True, padding_value=tokenizer.pad_token_id),
-            pad_sequence([x.attention_mask for x in o], batch_first=True, padding_value=0),
-            pad_sequence([x.rewards for x in o], batch_first=True, padding_value=0.0),
-            pad_sequence([x.states_ixs for x in o], batch_first=True, padding_value=0),
-            pad_sequence([x.actions_ixs for x in o], batch_first=True, padding_value=0),
-            pad_sequence([x.dones for x in o], batch_first=True, padding_value=0),
-        )
+        for k,v in o.items():
+            pad_val = tokenizer.pad_token_id if 'input_ids' in k else 0
+            o[k] = pad_sequence(v, batch_first=True, padding_value=pad_val)
+            if isinstance(o[k],tuple):
+                o[k] = o[k][0]
+            if 'ixs' in k:
+                o[k] = o[k].long()
+        return o
 
 
 
 
 if __name__ == '__main__':
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
-    model_args, training_args, data_args, lora_args,ilq_args = parser.parse_dict(train_info_args)
+    model_args, training_args, data_args, lora_args,ilql_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
-    ilq_args = ilq_args.config
+    ilql_args = ilql_args.config
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args,ilq_args=ilq_args)
+    dataHelper = NN_DataHelper(model_args, training_args, data_args,ilql_args=ilql_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
     config.decoder_start_token_id = config.bos_token_id
 
