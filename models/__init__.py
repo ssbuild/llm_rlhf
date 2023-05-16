@@ -82,6 +82,54 @@ class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss, with_pl=T
 
 
 
+class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_pl=True):
+    def __init__(self, *args, **kwargs):
+        lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        ilql_args: PPOConfig = kwargs.pop('ilql_args', None)
+        super(MyILQLTransformer, self).__init__(*args, **kwargs)
+
+        self.lora_args = lora_args
+        self.ilql_config = ilql_args
+        if lora_args is not None and lora_args.with_lora:
+            model = LoraModel(self.backbone, lora_args)
+            print('*' * 30, 'lora info')
+            model.print_trainable_parameters()
+            self.set_model(model, copy_attr=False)
+
+
+    def get_llm_model(self) -> PreTrainedModel:
+        if self.lora_args is not None and self.lora_args.with_lora:
+            return self.backbone.model.model
+        return self.backbone.model
+
+    @torch.no_grad()
+    def generate(self,*args,**kwargs):
+        return self.get_llm_model().generate(*args,**kwargs)
+
+    def configure_optimizers(self):
+        p = self.get_named_parameters(self.backbone)
+        training_args = self.training_args
+        optimizer = AdamW(p, lr=training_args.learning_rate,
+                          eps=training_args.adam_epsilon,
+                          betas=training_args.optimizer_betas,
+                          weight_decay=training_args.weight_decay)
+        return optimizer
+
+
+    def training_step(self,*args, **inputs):
+        outputs = self.compute_loss(*args, **inputs)
+        return outputs
+
+    def validation_step(self, batch):
+        outputs = self.compute_loss(**batch)
+        return outputs
+
+    def compute_loss(self, *args, **inputs):
+        return self.forward_ilql_loss(*args, **inputs)
+
+
+    def forward_logits_values(self,*args,**kwargs):
+        return self.model.forward(*args,**kwargs)
 
 
 def load_reward_model(model_dir) ->MyRewardTransformer:

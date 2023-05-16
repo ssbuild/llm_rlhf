@@ -36,6 +36,7 @@ class CorpusPreprocess:
             if chosen == rejected:
                 print('warning text_a == text_b and it will be ingored')
                 continue
+
             D.append((prompt, chosen, prompt, rejected,1.0,-1.0))
         return D
 
@@ -98,17 +99,40 @@ class TokenIds:
         dialogue = data[:n]
         rewards = data[n:]
 
-        tokenize_dialogue(dialogue)
+        sample = tokenize_dialogue(dialogue,tokenizer,max_seq_length)
 
-        max_prompt_length = max_seq_length - max_new_tokens
+        print('*' *30 , len(sample))
+        if len(sample) == 1:
+            print(dialogue)
+            print(rewards)
+            print(data)
 
-        o = tokenizer(prompt, truncation=True,padding=False, max_length=max_prompt_length)
-        input_ids = np.asarray(o['input_ids'],dtype=np.int32)
-        attention_mask = np.asarray(o['attention_mask'],dtype=np.int32)
+        rewards = np.asarray(rewards, dtype=np.float32)
 
+        length = 0
+        input_ids = np.asarray(sample[0].tokens,dtype=np.int32)
+        output_ids = np.asarray(sample[1].tokens, dtype=np.int32)
+        attention_mask = np.ones(len(input_ids), dtype=np.int32)
+        actions_ixs = []
+        for phrase in sample:
+            if phrase.is_output:
+                length = len(phrase.tokens)
+                actions_ixs.append(np.arange(0, length - 1))
+
+        states_ixs = np.hstack((*actions_ixs, np.asarray(length - 1)))
+        dones = np.asarray([1] * (len(states_ixs) - 1) + [0], dtype=np.int32)
+        actions_ixs = np.hstack(actions_ixs)
+        states_ixs = states_ixs
+
+        # sample_lengths = np.asarray([len(input_ids),len(output_ids)])
+        # output_lengths =np.asarray([len(output_ids)])
+        # prompt_lengths = sample_lengths - output_lengths
         return {
-            "prompt": np.array(bytes(prompt,encoding='utf-8')),
-            "org_labels": np.array(bytes(labels, encoding='utf-8')),
             "input_ids": input_ids,
             "attention_mask": attention_mask,
+            "output_ids": output_ids,
+            "rewards": rewards,
+            "actions_ixs": actions_ixs,
+            "states_ixs": states_ixs,
+            "dones": dones,
         }

@@ -49,7 +49,7 @@ adalora_info_args = {
 
 
 
-ppp_info_args = {
+ilql_info_args = {
     "model_arch_type": "causal" , # one of one of causal, prefixlm,seq2seq
     "tau":  0.7,
     "gamma":  0.99,
@@ -140,7 +140,7 @@ train_info_args = {
     ##############  lora模块
     'lora': {**lora_info_args},
     'adalora': {**adalora_info_args},
-    "ppo": {**ppp_info_args},
+    "ilql": {**ilql_info_args},
 }
 
 

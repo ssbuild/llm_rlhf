@@ -2,6 +2,10 @@
 # @Time    : 2023/4/20 17:08
 
 import sys
+
+from deep_training.nlp.rl.ilql.data_define import ILQLBatch
+from torch.nn.utils.rnn import pad_sequence
+
 sys.path.append('..')
 
 import copy
@@ -15,7 +19,7 @@ from deep_training.data_helper import DataHelper, ModelArguments, TrainingArgume
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-from models import LoraArguments,LoraConfig,PPOArguments,PPOConfig
+from models import LoraArguments,LoraConfig,ILQLArguments,ILQLConfig
 from config.ilql_config import *
 
 
@@ -52,8 +56,8 @@ class NN_DataHelper(DataHelper):
         config = self.config
         max_seq_length = self.max_seq_length_dict[mode]
 
-        ppo_args:PPOConfig = self.external_kwargs['ppo_args']
-        max_new_tokens = ppo_args.gen_kwargs['max_new_tokens']
+        ilq_args:ILQLConfig = self.external_kwargs['ilq_args']
+        max_new_tokens = ilq_args.gen_kwargs['max_new_tokens']
         tokenizer = self.tokenizer
 
         pair_data = data
@@ -72,8 +76,8 @@ class NN_DataHelper(DataHelper):
             D.extend(d)
         return D
 
+
     def collate_fn(self, batch):
-        merge_keys = ['input_ids','attention_mask']
         batch = copy.copy(batch)
         o = {
             k: []
@@ -81,29 +85,29 @@ class NN_DataHelper(DataHelper):
         }
         for i, b in enumerate(batch):
             for k in b:
-                o[k].append(copy.deepcopy(b[k]))
+                o[k].append(torch.tensor(b[k]))
 
-        o_pad = {
-            k: o[k] for k in merge_keys
-        }
         tokenizer: PreTrainedTokenizer = self.tokenizer
-        o_pad = tokenizer.pad(o_pad,
-                              # max_length=self.data_args.train_max_seq_length,
-                              return_tensors="pt")
-        for k in o_pad:
-            o[k] = o_pad[k]
-        return o
+
+        return ILQLBatch(
+            pad_sequence([x.input_ids for x in o], batch_first=True, padding_value=tokenizer.pad_token_id),
+            pad_sequence([x.attention_mask for x in o], batch_first=True, padding_value=0),
+            pad_sequence([x.rewards for x in o], batch_first=True, padding_value=0.0),
+            pad_sequence([x.states_ixs for x in o], batch_first=True, padding_value=0),
+            pad_sequence([x.actions_ixs for x in o], batch_first=True, padding_value=0),
+            pad_sequence([x.dones for x in o], batch_first=True, padding_value=0),
+        )
 
 
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,PPOArguments))
-    model_args, training_args, data_args, lora_args,ppo_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
+    model_args, training_args, data_args, lora_args,ilq_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
-    ppo_args = ppo_args.config
+    ilq_args = ilq_args.config
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
+    dataHelper = NN_DataHelper(model_args, training_args, data_args,ilq_args=ilq_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
     config.decoder_start_token_id = config.bos_token_id
 
