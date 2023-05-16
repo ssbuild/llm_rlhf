@@ -85,7 +85,12 @@ class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss, with_pl=T
 class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
-        ilql_args: PPOConfig = kwargs.pop('ilql_args', None)
+        ilql_args: ILQLConfig = kwargs.pop('ilql_args', None)
+        if ilql_args is not None:
+            kwargs.update({
+                "two_qs": ilql_args.two_qs,
+                "alpha": ilql_args.alpha,
+            })
         super(MyILQLTransformer, self).__init__(*args, **kwargs)
 
         self.lora_args = lora_args

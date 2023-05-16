@@ -1,4 +1,8 @@
 
+## 状态
+    reward      ok deep_training >=0.1.5
+    ppo         ok deep_training >=0.1.5
+    ilql        ok deep_training >=0.1.5@post0
 
 ## 注意事项
     llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer

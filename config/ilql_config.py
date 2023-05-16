@@ -57,8 +57,8 @@ ilql_info_args = {
     "awac_scale":  1,
     "alpha":  0.001,
     "beta":  0,
-    "steps_for_target_q_sync": 5,
-    "two_qs": True,
+    "steps_for_target_q_sync": 200, # 每训练 200步 同步一次heads
+    "two_qs": False, # 是否使用双头 占用显存较大
     # Additioanl kwargs for the generation
     "gen_kwargs": dict(
         max_new_tokens=128,
