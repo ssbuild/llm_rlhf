@@ -12,8 +12,8 @@ lora_info_args = {
     'with_lora': True,  # 是否启用lora模块
     'lora_type': 'lora',
     'r': 8,
-    'target_modules': ['query_key_value'],  # bloom,gpt_neox
-    # 'target_modules': ["q_proj", "v_proj"], #llama,opt,gptj,gpt_neo
+    # 'target_modules': ['query_key_value'],  # bloom,gpt_neox
+    'target_modules': ["q_proj", "v_proj"], #llama,opt,gptj,gpt_neo
     # 'target_modules': ['c_attn'], #gpt2
     'lora_alpha': 32,
     'lora_dropout': 0.1,
@@ -26,8 +26,8 @@ adalora_info_args = {
     'with_lora': False,  # 是否启用adalora模块
     'lora_type': 'adalora',
     'r': 8,
-    'target_modules': ['query_key_value'],  # bloom,gpt_neox
-    # 'target_modules': ["q_proj", "v_proj"], #llama,opt,gptj,gpt_neo
+    # 'target_modules': ['query_key_value'],  # bloom,gpt_neox
+    'target_modules': ["q_proj", "v_proj"], #llama,opt,gptj,gpt_neo
     # 'target_modules': ['c_attn'], #gpt2
     'lora_alpha': 32,
     'lora_dropout': 0.1,
@@ -50,11 +50,16 @@ adalora_info_args = {
 train_info_args = {
     'devices': 1,
     'data_backend': 'record',
-    'model_type': 'bloom',
+    'model_type': 'opt',
     # 预训练模型路径 , 从0训练，则置空
-    'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-560m',
-    'config_name': '/data/nlp/pre_models/torch/bloom/bloom-560m/config.json',
-    'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-560m',
+
+    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
+    'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
+    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
+
+    # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-560m',
+    # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-560m/config.json',
+    # 'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-560m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7/config.json',

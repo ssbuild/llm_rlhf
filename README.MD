@@ -1,22 +1,20 @@
 
-## 状态
-    reward      ok deep_training >=0.1.5
-    ppo         ok deep_training >=0.1.5
-    ilql        ok deep_training >=0.1.5@post0
 
-## 注意事项
+## install
     llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
     python >= 3.10
+    reward      ok deep_training >=0.1.5
+    ppo         ok deep_training >=0.1.5
+    ilql        ok deep_training >=0.1.5@post1
 
 
-
-## 更新详情
+## update information
 - [deep_training](https://github.com/ssbuild/deep_training)
 
 
 
 
-## 预训练模型下载，大小尺寸可自行选择
+## weight，大小尺寸可自行选择
     
 - [bloom预训练模型](https://huggingface.co/bigscience)
 - [bloom第三方中文训练模型](https://huggingface.co/Langboat/bloom-6b4-zh)  # 注意 需要修改tokenizer_config.json BloomTokenizer -> BloomTokenizerFast
@@ -24,7 +22,7 @@
 - [llama预训练模型](https://huggingface.co/decapoda-research)
 
 
-## 数据示例
+## data sample
 
 ```json
 {
