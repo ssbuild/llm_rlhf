@@ -2,12 +2,9 @@
 # @Time    : 2023/4/20 17:08
 
 import sys
-
-from deep_training.nlp.rl.ilql.data_define import ILQLBatch
-from torch.nn.utils.rnn import pad_sequence
-
 sys.path.append('..')
 
+from torch.nn.utils.rnn import pad_sequence
 import copy
 import json
 import os

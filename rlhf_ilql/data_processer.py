@@ -123,25 +123,25 @@ class TokenIds:
             dones = np.asarray([1] * (len(states_ixs) - 1) + [0], dtype=np.int32)
             actions_ixs = np.hstack(actions_ixs)
 
-            returns = returns - returns.mean()
-            std_returns = returns.std()
-            if not np.isnan(std_returns):
-                returns = returns / (std_returns + np.finfo(returns.dtype).eps)
+            # returns = returns - returns.mean()
+            # std_returns = returns.std()
+            # if not np.isnan(std_returns):
+            #     returns = returns / (std_returns + np.finfo(returns.dtype).eps)
             rewards = [np.zeros(len(actions_ixs))]
             for rs, ret in zip(rewards, returns):
                 rs[-1] = ret
-
+            rewards = np.asarray(rewards[0],dtype=np.float32)
             # sample_lengths = np.array([len(input_ids)])
             # output_lengths = np.array([len(actions_ixs)])
             # prompt_lengths = sample_lengths - output_lengths
             ds.append({
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "rewards": returns,
-            "actions_ixs": actions_ixs,
-            "states_ixs": states_ixs,
-            "dones": dones,
-        })
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "rewards": rewards,
+                "actions_ixs": actions_ixs,
+                "states_ixs": states_ixs,
+                "dones": dones,
+            })
         if not ds:
             return None
         return ds
