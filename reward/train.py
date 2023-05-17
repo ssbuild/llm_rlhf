@@ -116,8 +116,6 @@ if __name__ == '__main__':
         if tokenizer.pad_token_id is None or tokenizer.pad_token_id == -1:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    # config.num_hidden_layers = 1
-
     # 额外参数
     checkpoint_callback.tokenizer = tokenizer
     checkpoint_callback.data_args = data_args

@@ -104,8 +104,8 @@ class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_p
 
     def get_llm_model(self) -> PreTrainedModel:
         if self.lora_args is not None and self.lora_args.with_lora:
-            return self.backbone.model.model
-        return self.backbone.model
+            return self.backbone.model.model.model
+        return self.backbone.model.model
 
     @torch.no_grad()
     def generate(self,*args,**kwargs):

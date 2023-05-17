@@ -57,7 +57,7 @@ ilql_info_args = {
     "awac_scale":  1,
     "alpha":  0.001,
     "beta":  0,
-    "steps_for_target_q_sync": 200, # 每训练 200步 同步一次heads
+    "steps_for_target_q_sync": 50, # 每训练50步 同步一次heads
     "two_qs": False, # 是否使用双头 占用显存较大
     # Additioanl kwargs for the generation
     "gen_kwargs": dict(
@@ -77,9 +77,9 @@ train_info_args = {
     'model_type': 'opt',
     # 预训练模型路径 , 从0训练，则置空
 
-    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
-    'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
-    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
+    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
+    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
+    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-560m',
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-560m/config.json',
@@ -89,9 +89,9 @@ train_info_args = {
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7/config.json',
     # 'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
 
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
-    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
+    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
+    'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
+    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
     # 'config_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf/config.json',
@@ -127,7 +127,7 @@ train_info_args = {
     # 'scheduler': {'rewarm_epoch_num': 2,'verbose': True},
 
     'optimizer_betas': (0.9, 0.999),
-    'train_batch_size': 1,
+    'train_batch_size': 2,
     'eval_batch_size': 2,
     'test_batch_size': 2,
     'learning_rate': 2e-5,  #

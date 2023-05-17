@@ -8,14 +8,13 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyPPOTransformer, Generate, load_in_8bit,LoraArguments,PPOArguments
+from models import MyILQLTransformer, Generate, load_in_8bit,LoraArguments,ILQLArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,PPOArguments))
-    model_args, training_args, data_args, _,_ = parser.parse_dict(train_info_args)
-
-
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
+    model_args, training_args, data_args, _,ilql_args = parser.parse_dict(train_info_args)
+    ilql_args = ilql_args.config
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
@@ -26,8 +25,9 @@ if __name__ == '__main__':
 
     assert lora_args.inference_mode == True
 
-    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args,lora_args=lora_args,
-                                load_in_8bit=load_in_8bit, device_map="auto")
+    pl_model = MyILQLTransformer(config=config, model_args=model_args, training_args=training_args,
+                                 lora_args=lora_args,ilql_args=ilql_args,
+                                 load_in_8bit=load_in_8bit, device_map="auto")
     # 加载lora权重
     pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_dir, lora_config = lora_args)
     if load_in_8bit:
@@ -44,8 +44,15 @@ if __name__ == '__main__':
         model = pl_model.get_llm_model()
 
         text = "哪些食物对糖尿病患者有好处?"
-        response, history = Generate.chat(model, query=text, tokenizer=tokenizer, max_length=512,
+        response = Generate.generate(model, query=text, tokenizer=tokenizer, max_length=512,
                                           eos_token_id=config.eos_token_id,
                                           do_sample=True, top_p=0.7, temperature=0.95, )
+        print('input', text)
+        print('output', response)
+
+        text = "如何培养土豆?"
+        response = Generate.generate(model, query=text, tokenizer=tokenizer, max_length=512,
+                                     eos_token_id=config.eos_token_id,
+                                     do_sample=True, top_p=0.7, temperature=0.95, )
         print('input', text)
         print('output', response)

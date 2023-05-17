@@ -45,7 +45,7 @@ class MyRewardModel(TransformerForCausalLM):
             setattr(self.model, 'is_parallelizable', True)
             self.model.enable_input_require_grads()
 
-    def forward_reward(self,**batch):
+    def forward_value(self,**batch):
         state = self.transformer_bone(**batch)[0]
         value = self.score(state)
         return value.squeeze(-1)
@@ -56,8 +56,9 @@ class MyRewardModel(TransformerForCausalLM):
         chosen_mean_scores = []
         rejected_mean_scores = []
         loss = 0.
+        bs = chosen_ids.size(0)
         # pad_id = torch.tensor(self.config.pad_token_id, dtype=chosen_ids.dtype, device=chosen_values.device)
-        for i in range(chosen_ids.size(0)):
+        for i in range(bs):
             chosen_id = chosen_ids[i]
             rejected_id = rejected_ids[i]
             chosen_value = chosen_values[i]
@@ -85,12 +86,12 @@ class MyRewardModel(TransformerForCausalLM):
             # Compute loss based on truncated rewards (ignore padding)
             loss += -torch.log(torch.sigmoid(c_truncated_reward - r_truncated_reward)).mean()
 
-        loss = loss / chosen_ids.size(0)
+        loss /= bs
         chosen_mean_scores = torch.stack(chosen_mean_scores)
         rejected_mean_scores = torch.stack(rejected_mean_scores)
         return loss,chosen_mean_scores,rejected_mean_scores
 
-    def forward_value(self,input_ids,values):
+    def forward_score(self,input_ids,values):
         bs = values.size(0)
         seq_len = input_ids.shape[1]
         chosen_mean_scores = [
@@ -102,13 +103,13 @@ class MyRewardModel(TransformerForCausalLM):
             # here we only use the answer part of the sequence so we do not need to care about the padding at the beginning
             c_ind = c_inds[0].item() if len(c_inds) > 0 else seq_len
             chosen_mean_scores.append(value[c_ind - 1])
-        return values,torch.stack(chosen_mean_scores)
+        return torch.stack(chosen_mean_scores)
 
     def forward_returns(self, **inputs):
         input_ids = inputs['input_ids']
-        rewards = self.forward_reward(**inputs)
+        values = self.forward_value(**inputs)
         ends = torch.argmax((input_ids == self.config.eos_token_id).float(), dim=1).view(-1, 1)
-        returns = torch.gather(rewards, 1, ends).squeeze(-1)
+        returns = torch.gather(values, 1, ends).squeeze(-1)
         return returns
 
     def compute_loss(self, *args, return_value_only=False, **batch) -> tuple:
@@ -117,9 +118,9 @@ class MyRewardModel(TransformerForCausalLM):
             i, k = (input_b, k[:-1]) if k.endswith('2') else (input_a, k)
             i[k] = v
 
-        value_a = self.forward_reward(**input_a)
+        value_a = self.forward_value(**input_a)
         if len(input_b) > 0:
-            value_b = self.forward_reward(**input_b)
+            value_b = self.forward_value(**input_b)
             loss, chosen_mean_scores, rejected_mean_scores = self.forward_loss(input_a["input_ids"], value_a,
                                                                                input_b["input_ids"], value_b)
             loss_dict = {
@@ -131,10 +132,11 @@ class MyRewardModel(TransformerForCausalLM):
                 return (loss_dict,)
             return (loss, value_a, value_b)
 
-        values, chosen_mean_scores = self.forward_value(batch["input_ids"], value_a)
+
         if return_value_only:
-            return (values,)
-        return (values, chosen_mean_scores)
+            return (value_a,)
+        scores = self.forward_score(batch["input_ids"], value_a)
+        return (value_a, scores)
 
 
 
