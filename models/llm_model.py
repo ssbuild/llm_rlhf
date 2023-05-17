@@ -38,7 +38,8 @@ class MyRewardModel(TransformerForCausalLM):
         base_model_prefix = self.base_model_prefix[:-1] if self.base_model_prefix.endswith('_') else self.base_model_prefix
         self.transformer_bone = getattr(self.model,base_model_prefix,None)
         assert self.transformer_bone is not None
-        self.score = nn.Linear(self.config.hidden_size, self.config.num_labels)
+        hidden_size = self.config.word_embed_proj_dim if getattr(self.config,'word_embed_proj_dim',None) else self.config.hidden_size
+        self.score = nn.Linear(hidden_size, self.config.num_labels)
 
         if load_in_8bit:
             setattr(self.model, 'model_parallel', True)
