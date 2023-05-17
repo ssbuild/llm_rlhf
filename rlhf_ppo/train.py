@@ -72,8 +72,8 @@ if __name__ == '__main__':
         devices=data_args.devices,
         checkpoint_dir=data_args.output_dir,
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
-        strategy=strategy
-        # precision=16,#半精度
+        strategy=strategy,
+        # precision=‘bf16’,#混合精度训练，需显卡支持
     )
 
 
