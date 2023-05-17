@@ -151,7 +151,7 @@ if __name__ == '__main__':
     pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
                                 load_in_8bit=load_in_8bit,device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
 
-    # 如果使用  Traner.precision = '16-mixed',
+    # 如果使用  Trainer.precision = '16-mixed',
     #pl_model.float()
     pl_model.half()
 
