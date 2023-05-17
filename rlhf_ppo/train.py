@@ -74,7 +74,7 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
-        # precision=‘bf16’,#混合精度训练，需显卡支持
+        # precision='16-mixed',#混合精度训练，pl_model.float()
     )
 
 
@@ -150,7 +150,11 @@ if __name__ == '__main__':
 
     pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
                                 load_in_8bit=load_in_8bit,device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
-    pl_model.bfloat16()
+
+    # 如果使用  Traner.precision = '16-mixed',
+    #pl_model.float()
+    pl_model.half()
+
     # pl_ref_model = load_ref_model('../reward/best_ckpt')
     pl_ref_model = copy.deepcopy(pl_model)
     pl_ref_model.eval().half()
