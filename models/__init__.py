@@ -2,6 +2,7 @@
 # @Time:  11:30
 # @Author: tk
 from models.llm_model import *
+from models.rrhf_model import *
 '''
     模型训练类
 '''
@@ -135,6 +136,20 @@ class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_p
 
     def forward_logits_values(self,*args,**kwargs):
         return self.model.forward(*args,**kwargs)
+
+
+
+class MyRRHFTransformer(RRHFModelForCausalLM):
+    def __init__(self, *args, **kwargs):
+        lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        super(MyRRHFTransformer, self).__init__(*args, **kwargs)
+
+        self.lora_args = lora_args
+        if lora_args is not None and lora_args.with_lora:
+            model = LoraModel(self.backbone, lora_args)
+            print('*' * 30, 'lora info')
+            model.print_trainable_parameters()
+            self.set_model(model, copy_attr=False)
 
 
 def load_reward_model(model_dir) ->MyRewardTransformer:

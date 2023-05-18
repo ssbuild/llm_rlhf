@@ -169,6 +169,7 @@ class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):
 
 
 
+
 class Generate:
     @classmethod
     @torch.no_grad()

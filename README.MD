@@ -5,7 +5,8 @@
     python >= 3.10
     reward      ok deep_training >=0.1.5
     ppo         ok deep_training >=0.1.5
-    ilql        ok deep_training >=0.1.5@post1
+    ilql        ok deep_training >=0.1.5@post2
+    rrhf        testing ...
 
 
 ## update information
