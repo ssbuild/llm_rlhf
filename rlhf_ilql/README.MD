@@ -49,4 +49,7 @@ MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=2 python train.py
     lora 模式暂时不支持deepspeed
 
 ## 混合精度训练
-    Trainer.precision=‘16-mixed’,#混合精度训练，需显卡支持
+    Trainer.precision='16-mixed',#需 pl_model.float() 并注释掉 Trainer.max_grad_norm
+
+## 半精度训练
+    Trainer.precision='16',#需 pl_model.float()

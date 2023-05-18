@@ -23,7 +23,7 @@ class RRHFModelForCausalLM(TransformerForCausalLM):
 
         # self.only_use_provide = kwargs.get("only_use_provide",False)
         # self.only_use_sample = kwargs.get("only_use_sample", False)
-        self.length_penalty = kwargs.get('length_penalty',512)
+        self.length_penalty = kwargs.get('length_penalty',1.0)
 
     def gather_logits_labels(self, logits, labels):
         mask = (labels != -100).float()

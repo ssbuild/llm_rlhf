@@ -10,20 +10,6 @@ DEFAULT_BOS_TOKEN = "</s>"
 DEFAULT_UNK_TOKEN = "</s>"
 
 
-
-def _single_tokenize(text, tokenizer, max_len=None):
-    if max_len is None:
-        max_len = tokenizer.model_max_length
-    input_ids = tokenizer.encode(
-            text,
-            # return_tensors="pt",
-            padding="longest",
-            max_length=max_len,
-            truncation=True,
-        )
-    return input_ids
-
-IGNORE_INDEX = -100
 def stop_response(res):
     stops = ['\n\nHuman:', '\n\nAssistant:', '\n\nhuman:', '\n\nassistant:']
     for stop in stops:
@@ -46,6 +32,21 @@ class CorpusPreprocess:
             D.append((prompt, responses, scores))
         return D
 
+def _truncate_seq_pair(tokens_a, tokens_b, max_length):
+  """Truncates a sequence pair in place to the maximum length."""
+
+  # This is a simple heuristic which will always truncate the longer sequence
+  # one token at a time. This makes more sense than truncating an equal percent
+  # of tokens from each, since if one sequence is very short then each token
+  # that's truncated likely contains more information than a longer sequence.
+  while True:
+    total_length = len(tokens_a) + len(tokens_b)
+    if total_length <= max_length:
+      break
+    if len(tokens_a) > len(tokens_b):
+      tokens_a.pop()
+    else:
+      tokens_b.pop()
 
 class TokenIds:
     @classmethod
@@ -53,22 +54,19 @@ class TokenIds:
         query, responses,scores = data
         ds = []
         query_input_ids = tokenizer.encode(query,padding="longest",max_length=max_seq_length,truncation=True)
-        query_target = np.asarray([IGNORE_INDEX] * (query_input_ids.shape[0] - 1),dtype=np.int32)
-        dummy_target = np.asarray([IGNORE_INDEX],dtype=np.int32)
         for res in responses:
             if stop_response:
                 r = stop_response(res)
             else:
                 r = res
+            res_input_ids = tokenizer.encode(r + tokenizer.eos_token, padding="longest", max_length=max_seq_length, truncation=True)
+            _truncate_seq_pair(query_input_ids,res_input_ids,max_seq_length)
 
-            tokenizer.encode(r + tokenizer.eos_token, tokenizer, padding="longest", max_length=max_seq_length, truncation=True)
-            res_input_ids = _single_tokenize(r + tokenizer.eos_token, tokenizer,
-                                             max_len=tokenizer.model_max_length - query_input_ids.shape[
-                                                 0])  # eos here
-            input_ids = np.cat((query_input_ids, res_input_ids), ax=0)
-            labels = np.cat((query_target, res_input_ids, dummy_target), dim=0)
+            input_ids = query_input_ids + res_input_ids
+            labels = [-100] * len(query_input_ids)
+
             ds.append({
-                "input_ids": input_ids,
-                "labels": labels,
+                "input_ids": np.asarray(input_ids,dtype=np.int32),
+                "labels": np.asarray(labels,dtype=np.int32),
             })
         return ds

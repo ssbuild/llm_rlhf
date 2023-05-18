@@ -74,6 +74,7 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
+        precision=16,
         # precision='16-mixed',#混合精度训练，pl_model.float()
     )
 
@@ -153,7 +154,7 @@ if __name__ == '__main__':
 
     # 如果使用  Trainer.precision = '16-mixed',
     #pl_model.float()
-    pl_model.half()
+    pl_model.bfloat16()
 
     # pl_ref_model = load_ref_model('../reward/best_ckpt')
     pl_ref_model = copy.deepcopy(pl_model)

@@ -68,8 +68,8 @@ if __name__ == '__main__':
         checkpoint_dir=data_args.output_dir,
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         max_grad_norm=training_args.max_grad_norm,
-        strategy=strategy
-        # precision=16,#半精度
+        strategy=strategy,
+        precision=16, #半精度
     )
 
 
@@ -106,6 +106,7 @@ if __name__ == '__main__':
                                  load_in_8bit=load_in_8bit,device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
 
     pl_model.bfloat16()
+
     ckpt_path = './best_ckpt/best.pt'
     if not data_args.convert_onnx:
         #  只恢复权重 ， 不恢复步数和优化器 ，
