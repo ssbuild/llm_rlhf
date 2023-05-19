@@ -7,8 +7,8 @@ import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
-from data_utils import train_info_args, NN_DataHelper
-from models import MyRRHFTransformer, load_in_8bit,LoraArguments
+from data_utils import train_info_args, NN_DataHelper,global_args
+from models import MyRRHFTransformer,LoraArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
@@ -29,7 +29,7 @@ if __name__ == '__main__':
                                 load_in_8bit=global_args["load_in_8bit"], device_map="auto")
     # 加载sft权重
     pl_model.load_sft_weight(ckpt_dir)
-    if load_in_8bit:
+    if global_args["load_in_8bit"]:
         pl_model.eval().cuda()
     else:
         pl_model.eval().half().cuda()

@@ -11,7 +11,7 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyPPOTransformer, Generate, load_in_8bit,LoraArguments,PPOArguments
+from models import MyPPOTransformer, Generate,LoraArguments,PPOArguments
 from config.ppo_config import get_deepspeed_config
 
 
@@ -42,22 +42,17 @@ if __name__ == '__main__':
 
     pl_model.load_sft_weight(train_weight)
 
-    if load_in_8bit:
-        pl_model.eval().cuda()
-    else:
-        pl_model.eval().half().cuda()
+
+    pl_model.eval().half().cuda()
 
     enable_merge_weight = False
 
-    if enable_merge_weight:
-        # 合并lora 权重 保存
-        pl_model.save_sft_weight(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'),merge_lora_weight=True)
-    else:
-        model = pl_model.get_llm_model()
 
-        text = "哪些食物对糖尿病患者有好处?"
-        response, history = Generate.chat(model, query=text, tokenizer=tokenizer, max_length=512,
-                                          eos_token_id=config.eos_token_id,
-                                          do_sample=True, top_p=0.7, temperature=0.95, )
-        print('input', text)
-        print('output', response)
+    model = pl_model.get_llm_model()
+
+    text = "哪些食物对糖尿病患者有好处?"
+    response, history = Generate.chat(model, query=text, tokenizer=tokenizer, max_length=512,
+                                      eos_token_id=config.eos_token_id,
+                                      do_sample=True, top_p=0.7, temperature=0.95, )
+    print('input', text)
+    print('output', response)
