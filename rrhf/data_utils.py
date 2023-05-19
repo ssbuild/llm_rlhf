@@ -16,7 +16,7 @@ from models import LoraArguments,LoraConfig
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-from config.reward_config import *
+from config.rrhf_config import *
 from torch.nn import functional as F
 
 def preprocess(text):

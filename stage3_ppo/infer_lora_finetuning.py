@@ -29,7 +29,7 @@ if __name__ == '__main__':
     assert lora_args.inference_mode == True
 
     pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args,lora_args=lora_args,
-                                load_in_8bit=load_in_8bit, device_map="auto")
+                                load_in_8bit=global_args["load_in_8bit"], device_map="auto")
     # 加载sft权重
     pl_model.load_sft_weight(ckpt_dir)
     if load_in_8bit:

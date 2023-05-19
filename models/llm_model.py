@@ -21,7 +21,6 @@ from config import reward_config
 from deep_training.nlp.models.rl.modeling_ppo import AutoModelForCausalLMWithValueHead,CausalLMOutputWithValue
 from deep_training.nlp.models.rl.modeling_ilql import AutoModelForCausalLMWithILQLHeads
 
-load_in_8bit = False
 
 '''
     reward model
@@ -142,19 +141,17 @@ class MyRewardModel(TransformerForCausalLM):
 
 
 class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
-    def __init__(self,*args,**kwargs):
+    def __init__(self,*args,hidden_size=None, up_sampling_score=False,**kwargs):
         config = kwargs.get('config')
-        hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim',None) else config.hidden_size
-        kwargs.update({
-            "hidden_size": hidden_size,
-            "up_sampling_score": False, #占用显存更大
-        })
+        if hidden_size is None:
+            hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim',
+                                                                None) else config.hidden_size
         # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
         load_in_8bit = kwargs.get('load_in_8bit', False)
         if not load_in_8bit:
             kwargs.pop("device_map", None)
 
-        super(PPOModelForCausalLMWithValueHead, self).__init__(*args, **kwargs)
+        super(PPOModelForCausalLMWithValueHead, self).__init__(*args,hidden_size=hidden_size, up_sampling_score=up_sampling_score, **kwargs)
 
         if load_in_8bit:
             setattr(self.model, 'model_parallel', True)
@@ -163,18 +160,14 @@ class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
 
 
 class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args,hidden_size=None, up_sampling_score=False,**kwargs):
         config = kwargs.get('config')
-        hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim', None) else config.hidden_size
-        kwargs.update({
-            "hidden_size": hidden_size,
-            "up_sampling_score": False,  # 占用显存更大
-        })
-
+        if hidden_size is None:
+            hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim', None) else config.hidden_size
         load_in_8bit = kwargs.get('load_in_8bit', False)
         if not load_in_8bit:
             kwargs.pop("device_map", None)
-        super(ILQLModelForCausalLMWithILQLHeads, self).__init__(*args, **kwargs)
+        super(ILQLModelForCausalLMWithILQLHeads, self).__init__(*args,hidden_size=hidden_size,up_sampling_score=up_sampling_score, **kwargs)
 
         if load_in_8bit:
             setattr(self.model, 'model_parallel', True)

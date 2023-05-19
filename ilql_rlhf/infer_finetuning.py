@@ -2,10 +2,8 @@
 # @Author  : tk
 # @FileName: infer_finetuning
 import sys
-
-from config.ilql_config import get_deepspeed_config
-
 sys.path.append('..')
+
 
 import os
 import torch
@@ -13,15 +11,16 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyILQLTransformer, Generate, load_in_8bit,LoraArguments,ILQLArguments
+from models import MyILQLTransformer, Generate,LoraArguments,ILQLArguments
+from config.ilql_config import get_deepspeed_config
 
 deep_config = get_deepspeed_config()
 
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
-    model_args, _, data_args, _,ilql_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, DataArguments,ILQLArguments))
+    model_args, data_args,ilql_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
     ilql_args = ilql_args.config
 
     dataHelper = NN_DataHelper(model_args, None, data_args)
@@ -30,8 +29,7 @@ if __name__ == '__main__':
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
 
-    pl_model = MyILQLTransformer(config=config, model_args=model_args, ilql_args=ilql_args,
-                                 load_in_8bit=load_in_8bit, device_map="auto")
+    pl_model = MyILQLTransformer(config=config, model_args=model_args, ilql_args=ilql_args)
 
     if deep_config is None:
         train_weight = './best_ckpt/best.pt'
@@ -43,29 +41,23 @@ if __name__ == '__main__':
 
     # 加载sft权重
     pl_model.load_sft_weight(ckpt_dir)
-    if load_in_8bit:
-        pl_model.eval().cuda()
-    else:
-        pl_model.eval().half().cuda()
+
+    pl_model.eval().half().cuda()
 
     enable_merge_weight = False
 
-    if enable_merge_weight:
-        # 合并lora 权重 保存
-        pl_model.save_sft_weight(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'),merge_lora_weight=True)
-    else:
-        model = pl_model.get_llm_model()
+    model = pl_model.get_llm_model()
 
-        text = "哪些食物对糖尿病患者有好处?"
-        response = Generate.generate(model, query=text, tokenizer=tokenizer, max_length=512,
-                                          eos_token_id=config.eos_token_id,
-                                          do_sample=True, top_p=0.7, temperature=0.95, )
-        print('input', text)
-        print('output', response)
+    text = "哪些食物对糖尿病患者有好处?"
+    response = Generate.generate(model, query=text, tokenizer=tokenizer, max_length=512,
+                                      eos_token_id=config.eos_token_id,
+                                      do_sample=True, top_p=0.7, temperature=0.95, )
+    print('input', text)
+    print('output', response)
 
-        text = "如何培养土豆?"
-        response = Generate.generate(model, query=text, tokenizer=tokenizer, max_length=512,
-                                     eos_token_id=config.eos_token_id,
-                                     do_sample=True, top_p=0.7, temperature=0.95, )
-        print('input', text)
-        print('output', response)
+    text = "如何培养土豆?"
+    response = Generate.generate(model, query=text, tokenizer=tokenizer, max_length=512,
+                                 eos_token_id=config.eos_token_id,
+                                 do_sample=True, top_p=0.7, temperature=0.95, )
+    print('input', text)
+    print('output', response)

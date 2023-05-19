@@ -10,12 +10,13 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyILQLTransformer, Generate, load_in_8bit,LoraArguments,ILQLArguments
+from models import MyILQLTransformer, Generate,LoraArguments,ILQLArguments
+from config.ilql_config import global_args
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
-    model_args, _, data_args, _,ilql_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, DataArguments,ILQLArguments))
+    model_args, data_args, ilql_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
     ilql_args = ilql_args.config
 
     dataHelper = NN_DataHelper(model_args, None, data_args)
@@ -27,10 +28,10 @@ if __name__ == '__main__':
     assert lora_args.inference_mode == True
 
     pl_model = MyILQLTransformer(config=config, model_args=model_args, lora_args=lora_args,ilql_args=ilql_args,
-                                 load_in_8bit=load_in_8bit, device_map="auto")
+                                 load_in_8bit=global_args["load_in_8bit"], device_map="auto")
     # 加载sft权重
     pl_model.load_sft_weight(ckpt_dir)
-    if load_in_8bit:
+    if global_args["load_in_8bit"]:
         pl_model.eval().cuda()
     else:
         pl_model.eval().half().cuda()

@@ -6,7 +6,11 @@ import json
 import os
 
 # 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
-
+global_args = {
+    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+    "num_layers": -1, # 是否使用骨干网络的全部层数 最大1-28， -1 表示全层, 否则只用只用N层
+    "num_layers_key":  "num_hidden_layers",
+}
 
 lora_info_args = {
     'with_lora': True,  # 是否启用lora模块
@@ -87,9 +91,9 @@ train_info_args = {
     'model_type': 'opt',
     # 预训练模型路径 , 从0训练，则置空
 
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
-    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
+    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
+    'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
+    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-560m',
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-560m/config.json',
@@ -99,9 +103,9 @@ train_info_args = {
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7/config.json',
     # 'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
 
-    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
-    'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
-    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
+    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
+    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
+    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
     # 'config_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf/config.json',

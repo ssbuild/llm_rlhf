@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 
     pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args,
-                                load_in_8bit=load_in_8bit, device_map="auto")
+                                load_in_8bit=global_args["load_in_8bit"], device_map="auto")
 
     pl_model.eval().half().cuda()
 

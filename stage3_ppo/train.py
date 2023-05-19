@@ -9,9 +9,9 @@ from deep_training.data_helper import ModelArguments, DataArguments, TrainingArg
 from deep_training.utils.trainer import SimpleModelCheckpointFabric
 from transformers import HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
-from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
+from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
 from models import MyPPOTransformer, LoraArguments, LoraConfig, PPOArguments, PPOConfig, load_reward_model, \
-    load_ref_model, load_in_8bit
+    load_ref_model
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
 from lightning.fabric.strategies import DeepSpeedStrategy
 
@@ -83,7 +83,10 @@ if __name__ == '__main__':
 
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
-    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
+    config_kwargs = {"torch_dtype": torch.float16}
+    if global_args["num_layers"] > 0:
+        config_kwargs[global_args["num_layers_key"]] = global_args["num_layers"]
+    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
     config.decoder_start_token_id = config.bos_token_id
 
     if "llama" in model_args.model_name_or_path.lower() and tokenizer.bos_token_id != DEFAULT_BOS_TOKEN:
@@ -95,7 +98,6 @@ if __name__ == '__main__':
         if tokenizer.pad_token_id is None or tokenizer.pad_token_id == -1:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    # config.num_hidden_layers = 1
 
     # 额外参数
     # checkpoint_callback.tokenizer = tokenizer
@@ -153,7 +155,7 @@ if __name__ == '__main__':
 
 
     pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
-                                load_in_8bit=load_in_8bit,device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
+                                load_in_8bit=global_args["load_in_8bit"],device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
 
     # pl_model.bfloat16()
     pl_model.float()

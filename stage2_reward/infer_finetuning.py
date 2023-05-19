@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    pl_model = MyRewardTransformer(config=config, model_args=model_args, load_in_8bit=load_in_8bit, device_map="auto")
+    pl_model = MyRewardTransformer(config=config, model_args=model_args, load_in_8bit=global_args["load_in_8bit"], device_map="auto")
     if deep_config is None:
         train_weight = './best_ckpt/best.pt'
     else:
