@@ -1,8 +1,10 @@
 # @Time    : 2023/4/2 22:49
 # @Author  : tk
 # @FileName: infer_lora_finetuning
-import os
+import sys
+sys.path.append('..')
 
+import os
 import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
@@ -38,7 +40,7 @@ if __name__ == '__main__':
 
     if enable_merge_weight:
         # 合并lora 权重 保存
-        pl_model.save_pretrained_merge_lora(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'))
+        pl_model.save_sft_weight(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'),merge_lora_weight=True)
     else:
         model = pl_model.get_llm_model()
 

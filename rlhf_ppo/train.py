@@ -23,6 +23,9 @@ class MySimpleModelCheckpoint(SimpleModelCheckpointFabric):
         if lora_args is not None:
             self.weight_file = './best_ckpt'
             self.last_weight_file = './last_ckpt'
+        else:
+            self.weight_file = './best_ckpt/best.pt'
+            self.last_weight_file = './last_ckpt/best.pt'
 
 
 

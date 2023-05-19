@@ -1,6 +1,9 @@
 # @Time    : 2023/4/2 22:49
 # @Author  : tk
 # @FileName: infer_lora_finetuning
+import sys
+sys.path.append('..')
+
 import os
 import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments

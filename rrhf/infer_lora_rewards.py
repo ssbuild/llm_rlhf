@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     if enable_merge_weight:
         # 合并lora 权重 保存
-        pl_model.save_pretrained_merge_lora(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'))
+        pl_model.save_sft_weight(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'),merge_lora_weight=True)
     else:
 
         pl_model.requires_grad_(False)

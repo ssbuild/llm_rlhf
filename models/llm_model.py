@@ -143,10 +143,17 @@ class MyRewardModel(TransformerForCausalLM):
 
 class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
     def __init__(self,*args,**kwargs):
+        config = kwargs.get('config')
+        hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim',None) else config.hidden_size
+        kwargs.update({
+            "hidden_size": hidden_size,
+            "up_sampling_score": False, #占用显存更大
+        })
         # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
         load_in_8bit = kwargs.get('load_in_8bit', False)
         if not load_in_8bit:
             kwargs.pop("device_map", None)
+
         super(PPOModelForCausalLMWithValueHead, self).__init__(*args, **kwargs)
 
         if load_in_8bit:
@@ -157,6 +164,13 @@ class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
 
 class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):
     def __init__(self, *args, **kwargs):
+        config = kwargs.get('config')
+        hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim', None) else config.hidden_size
+        kwargs.update({
+            "hidden_size": hidden_size,
+            "up_sampling_score": False,  # 占用显存更大
+        })
+
         load_in_8bit = kwargs.get('load_in_8bit', False)
         if not load_in_8bit:
             kwargs.pop("device_map", None)

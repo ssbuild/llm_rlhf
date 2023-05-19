@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/5/17 14:26
+import sys
+sys.path.append('..')
+
 import json
 import os
 import numpy as np

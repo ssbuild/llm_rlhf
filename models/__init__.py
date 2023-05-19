@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 # @Time:  11:30
 # @Author: tk
+import os
+
 import torch
+from transformers import PretrainedConfig
 
 from models.llm_model import *
 from models.rrhf_model import *
@@ -9,7 +12,59 @@ from models.rrhf_model import *
     模型训练类
 '''
 
-class MyRewardTransformer(MyRewardModel, with_pl=True):
+
+class SftWeightMinMax:
+
+    def save_pretrained_merge_lora(self,sft_weight_path: str):
+        assert os.path.exists(os.path.dirname(sft_weight_path))
+        assert self.lora_args is not None and self.lora_args.with_lora
+        lora_model : LoraModel = self.backbone
+        model: nn.Module = lora_model.merge_and_unload()
+        #保存hf权重，可用infer.py推理
+        # torch.save(model.model.state_dict(),weight_path_file)
+        model.model.save_pretrained(sft_weight_path)
+        return model
+
+    def save_pretrained_merge_lora_and_restore(self, sft_weight_path: str):
+        assert os.path.exists(os.path.dirname(sft_weight_path))
+        assert self.lora_args is not None and self.lora_args.with_lora
+        lora_model: LoraModel = self.backbone
+        lora_model.merge_adapter()
+        # 保存hf权重，可用infer.py推理
+        #torch.save(lora_model.model.model.state_dict(), weight_path_file)
+        lora_model.model.model.save_pretrained(sft_weight_path)
+        lora_model.unmerge_adapter()
+
+    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
+        if self.lora_args is not None and self.lora_args.with_lora:
+            # 加载lora权重
+            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
+                                          is_trainable=is_trainable)
+        else:
+            # 加载sft 或者 p-tuning-v2权重
+            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
+
+    def save_sft_weight(self,sft_weight_path, merge_lora_weight=False):
+        if self.lora_args is not None and self.lora_args.with_lora:
+            if merge_lora_weight:
+                # lora 合并权重 转换 hf权重
+                self.save_pretrained_merge_lora(sft_weight_path)
+            else:
+                #只保存 lora 权重
+                self.backbone.save_pretrained(sft_weight_path)
+        else:
+            config: PretrainedConfig = self.model.config
+            if self.prompt_args is not None and self.prompt_args.with_prompt:
+                # 保存sft p-tuning-v2 权重
+                self.backbone.save_pretrained(sft_weight_path)
+            else:
+                #保存hf权重
+                config.save_pretrained(sft_weight_path)
+                self.get_llm_model().save_pretrained(sft_weight_path)
+
+
+
+class MyRewardTransformer(MyRewardModel,SftWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         super(MyRewardTransformer, self).__init__(*args, **kwargs)
@@ -33,17 +88,9 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
             model = self.backbone
         return model.forward_returns(*args,**kwargs)
 
-    def load_sft_weight(self,sft_weight_path: str,is_trainable=False,strict=False):
-        if self.lora_args is not None and self.lora_args.with_lora:
-            #加载lora权重
-            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
-                                          is_trainable=is_trainable)
-        else:
-            # 加载sft 或者 p-tuning-v2权重
-            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
 
-class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss, with_pl=True):
+class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss,SftWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         ppo_args: PPOConfig = kwargs.pop('ppo_args', None)
@@ -92,17 +139,10 @@ class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss, with_pl=T
     def forward_logits_values(self,*args,**kwargs):
         return self.model.forward(*args,**kwargs)
 
-    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
-        if self.lora_args is not None and self.lora_args.with_lora:
-            # 加载lora权重
-            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
-                                          is_trainable=is_trainable)
-        else:
-            # 加载sft 或者 p-tuning-v2权重
-            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
 
-class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_pl=True):
+
+class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss,SftWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         ilql_args: ILQLConfig = kwargs.pop('ilql_args', None)
@@ -156,17 +196,9 @@ class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_p
     def forward_logits_values(self,*args,**kwargs):
         return self.model.forward(*args,**kwargs)
 
-    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
-        if self.lora_args is not None and self.lora_args.with_lora:
-            # 加载lora权重
-            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
-                                          is_trainable=is_trainable)
-        else:
-            # 加载sft 或者 p-tuning-v2权重
-            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
 
-class MyRRHFTransformer(RRHFModelForCausalLM):
+class MyRRHFTransformer(RRHFModelForCausalLM,with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         super(MyRRHFTransformer, self).__init__(*args, **kwargs)
@@ -178,14 +210,14 @@ class MyRRHFTransformer(RRHFModelForCausalLM):
             model.print_trainable_parameters()
             self.set_model(model, copy_attr=False)
 
-    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
+    def get_llm_model(self) -> PreTrainedModel:
         if self.lora_args is not None and self.lora_args.with_lora:
-            # 加载lora权重
-            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
-                                          is_trainable=is_trainable)
-        else:
-            # 加载sft 或者 p-tuning-v2权重
-            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
+            return self.backbone.model.model
+        return self.backbone.model
+
+    @torch.no_grad()
+    def generate(self, *args, **kwargs):
+        return self.get_llm_model().generate(*args, **kwargs)
 
 
 def load_reward_model(sft_model_dir,sft_weight_path=None) ->MyRewardTransformer:
