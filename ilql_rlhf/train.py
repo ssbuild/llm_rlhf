@@ -117,12 +117,14 @@ if __name__ == '__main__':
     pl_model = MyILQLTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ilql_args=ilql_args,
                                  load_in_8bit=global_args["load_in_8bit"],device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
 
+    # 加载sft权重训练
+    # pl_model.load_sft_weight('sft_weight.bin',is_trainable=True)
+
     # pl_model.bfloat16()
     pl_model.float()
 
 
-    # 加载sft权重训练
-    # pl_model.load_sft_weight('sft_weight.bin',is_trainable=True)
+
 
     train_datasets = dataHelper.load_distributed_random_sampler(
         dataHelper.train_files,
