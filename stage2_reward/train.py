@@ -143,16 +143,6 @@ if __name__ == '__main__':
     # pl_model.load_sft_weight('sft_weight.bin',is_trainable=True)
 
 
-    ckpt_path = './best_ckpt/best.pt'
-    #  只恢复权重 ， 不恢复步数和优化器 ，
-    #  如果想恢复步数， 修改 trainer.fit(pl_model, train_dataloaders=train_datasets，ckpt=ckpt_path)  注lora 当前不支持恢复步数。
-    # if os.path.exists(ckpt_path):
-    #     if  lora_args is None:
-    #         # 加载权重继续训练
-    #         pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,strict=False)
-    #     else:
-    #         # 加载lora权重 继续训练  0.0.20版本支持lora 继续训练
-    #         pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_path,lora_config=lora_args,is_trainable=True,strict=False)
 
     train_datasets = dataHelper.load_distributed_random_sampler(
         dataHelper.train_files,
