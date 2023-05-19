@@ -8,19 +8,21 @@ import os.path
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
 from deep_training.utils.trainer import SimpleModelCheckpointFabric
-from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
-from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config
 from models import MyILQLTransformer, LoraArguments, LoraConfig, ILQLArguments, ILQLConfig,  load_in_8bit
 from deep_training.nlp.rl.ilql.ilql_trainer import ILQLTrainer
+from lightning.fabric.strategies import DeepSpeedStrategy
 
 class MySimpleModelCheckpoint(SimpleModelCheckpointFabric):
     def __init__(self, *args, **kwargs):
         super(MySimpleModelCheckpoint, self).__init__(*args, **kwargs)
         lora_args:LoraConfig= self.external_kwargs['lora_args']
-        if lora_args is not None:
+        if deepspeed_config is not None:
+            self.weight_file = './best_ckpt/last.ckpt'
+            self.last_weight_file = './last_ckpt/last.ckpt'
+        elif lora_args is not None:
             self.weight_file = './best_ckpt'
             self.last_weight_file = './last_ckpt'
         else:
@@ -72,7 +74,7 @@ if __name__ == '__main__':
         devices=data_args.devices,
         checkpoint_dir=data_args.output_dir,
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
-        max_grad_norm=training_args.max_grad_norm,
+        #max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
         precision=16, #半精度
     )
@@ -113,58 +115,23 @@ if __name__ == '__main__':
     # pl_model.bfloat16()
     pl_model.float()
 
-    # 如果自定义训练了sft_weight , 可以再次加载sft_weight
-    # pl_model.load_sft_weight('sft_weight.bin')
 
-    ckpt_path = './best_ckpt/best.pt'
-    if not data_args.convert_onnx:
-        #  只恢复权重 ， 不恢复步数和优化器 ，
-        #  如果想恢复步数， 修改 trainer.fit(pl_model, train_dataloaders=train_datasets，ckpt=ckpt_path)  注lora 当前不支持恢复步数。
-        # if os.path.exists(ckpt_path):
-        #     if  lora_args is None:
-        #         # 加载权重继续训练
-        #         pl_model = MyILQLTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,strict=False)
-        #     else:
-        #         # 加载lora权重 继续训练  0.0.20版本支持lora 继续训练
-        #         pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_path,lora_config=lora_args,is_trainable=True,strict=False)
+    # 加载sft权重训练
+    # pl_model.load_sft_weight('sft_weight.bin',is_trainable=True)
 
-        train_datasets = dataHelper.load_distributed_random_sampler(
-            dataHelper.train_files,
-            with_load_memory=True,
-            collate_fn=dataHelper.collate_fn,
-            batch_size=training_args.train_batch_size,
-            drop_last=True,  # 多卡建议扔掉
-            num_processes=trainer.world_size, process_index=trainer.global_rank)
+    train_datasets = dataHelper.load_distributed_random_sampler(
+        dataHelper.train_files,
+        with_load_memory=True,
+        collate_fn=dataHelper.collate_fn,
+        batch_size=training_args.train_batch_size,
+        num_workers=0,  # num_workers for DataLoader
+        drop_last=True,  # 多卡建议扔掉
+        num_processes=trainer.world_size, process_index=trainer.global_rank)
 
-        if train_datasets is not None:
-            trainer.fit(pl_model,
-                        train_loader=train_datasets,
-                        tokenizer=tokenizer,
-                        ilql_config=ilql_args,
-                        stop_sequences=["Human:", "human:", "Assistant:", "assistant:"],
-                        )
-
-    else:
-        if lora_args is None:
-            # 加载权重
-            pl_model = MyILQLTransformer.load_from_checkpoint(ckpt_path, config=config,
-                                                          model_args=model_args,
-                                                          training_args=training_args,
-                                                          lora_args=lora_args, strict=False)
-
-
-            model = pl_model.get_glm_model()
-            # 保存huggingface model
-            model.save_pretrained('huggingface_model', max_shard_size='10GB')
-        else:
-            # 加载权重
-            lora_args = LoraArguments.from_pretrained('./best_ckpt')
-            pl_module = MyILQLTransformer(lora_args=lora_args,
-                                      config=config,
-                                      model_args=model_args,
-                                      training_args=training_args)
-            # 二次加载权重
-            pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path='./best_ckpt',
-                                               lora_config=lora_args)
-
-            model = pl_model.get_llm_model()
+    if train_datasets is not None:
+        trainer.fit(pl_model,
+                    train_loader=train_datasets,
+                    tokenizer=tokenizer,
+                    ilql_config=ilql_args,
+                    stop_sequences=["Human:", "human:", "Assistant:", "assistant:"],
+                    )

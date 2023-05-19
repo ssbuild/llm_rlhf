@@ -1,7 +1,10 @@
 # @Time    : 2023/4/2 22:49
 # @Author  : tk
-# @FileName: infer_lora_finetuning
+# @FileName: infer_finetuning
 import sys
+
+from config.ilql_config import get_deepspeed_config
+
 sys.path.append('..')
 
 import os
@@ -12,23 +15,32 @@ from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 from data_utils import train_info_args, NN_DataHelper
 from models import MyILQLTransformer, Generate, load_in_8bit,LoraArguments,ILQLArguments
 
+deep_config = get_deepspeed_config()
+
+
 if __name__ == '__main__':
     train_info_args['seed'] = None
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
-    model_args, training_args, data_args, _,ilql_args = parser.parse_dict(train_info_args)
+    model_args, _, data_args, _,ilql_args = parser.parse_dict(train_info_args)
     ilql_args = ilql_args.config
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args)
+    dataHelper = NN_DataHelper(model_args, None, data_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    lora_args = LoraArguments.from_pretrained(ckpt_dir)
-    assert lora_args.inference_mode == True
 
-    pl_model = MyILQLTransformer(config=config, model_args=model_args, training_args=training_args,
-                                 lora_args=lora_args,ilql_args=ilql_args,
+    pl_model = MyILQLTransformer(config=config, model_args=model_args, ilql_args=ilql_args,
                                  load_in_8bit=load_in_8bit, device_map="auto")
+
+    if deep_config is None:
+        train_weight = './best_ckpt/best.pt'
+    else:
+        # 建议直接使用转换脚本命令 支持 deepspeed stage 0,1,2,3， 生成 ./best_ckpt/last.ckpt/best.pt 权重文件
+        # cd best_ckpt/last.ckpt
+        # python zero_to_fp32.py . best.pt
+        train_weight = './best_ckpt/last.ckpt/best.pt'
+
     # 加载sft权重
     pl_model.load_sft_weight(ckpt_dir)
     if load_in_8bit:

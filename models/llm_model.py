@@ -14,7 +14,7 @@ from deep_training.nlp.utils import configure_optimizers
 from torch import nn
 from deep_training.nlp.models.lora.v2 import LoraModel, LoraArguments,LoraConfig
 from deep_training.nlp.models.transformer import TransformerForCausalLM
-from torch.optim import AdamW
+from transformers import AdamW
 from transformers import PreTrainedModel, HfArgumentParser, AutoConfig
 from transformers.utils import ModelOutput
 from config import reward_config
