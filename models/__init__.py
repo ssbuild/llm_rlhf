@@ -4,10 +4,10 @@
 import os
 import re
 from collections import OrderedDict
-
 import torch
 from transformers import PretrainedConfig
-
+from deep_training.nlp.models.prompt.configuration import PromptArguments,PromptLearningConfig
+from deep_training.nlp.models.prompt.prompt_model import get_prompt_model
 from models.llm_model import *
 from models.rrhf_model import *
 '''
@@ -83,8 +83,10 @@ class SftWeightMinMax:
 class MyRewardTransformer(MyRewardModel,SftWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)
         super(MyRewardTransformer, self).__init__(*args, **kwargs)
         self.lora_args = lora_args
+        self.prompt_args = prompt_args
         if lora_args is not None and lora_args.with_lora:
             model = LoraModel(self.backbone, lora_args)
             print('*' * 30, 'lora info')
@@ -109,11 +111,13 @@ class MyRewardTransformer(MyRewardModel,SftWeightMinMax, with_pl=True):
 class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss,SftWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)
         ppo_args: PPOConfig = kwargs.pop('ppo_args', None)
         super(MyPPOTransformer, self).__init__(*args, **kwargs)
 
         self.lora_args = lora_args
         self.ppo_config = ppo_args
+        self.prompt_args=prompt_args
         if lora_args is not None and lora_args.with_lora:
             model = LoraModel(self.backbone, lora_args)
             print('*' * 30, 'lora info')
@@ -161,6 +165,7 @@ class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss,SftWeightM
 class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss,SftWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)
         ilql_args: ILQLConfig = kwargs.pop('ilql_args', None)
         if ilql_args is not None:
             kwargs.update({
@@ -171,6 +176,7 @@ class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss,SftWeig
 
         self.lora_args = lora_args
         self.ilql_config = ilql_args
+        self.prompt_args = prompt_args
         if lora_args is not None and lora_args.with_lora:
             model = LoraModel(self.backbone, lora_args)
             print('*' * 30, 'lora info')
@@ -217,9 +223,11 @@ class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss,SftWeig
 class MyRRHFTransformer(RRHFModelForCausalLM,with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
+        prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)
         super(MyRRHFTransformer, self).__init__(*args, **kwargs)
 
         self.lora_args = lora_args
+        self.prompt_args=prompt_args
         if lora_args is not None and lora_args.with_lora:
             model = LoraModel(self.backbone, lora_args)
             print('*' * 30, 'lora info')
