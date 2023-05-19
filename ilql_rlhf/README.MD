@@ -28,8 +28,10 @@
     python train.py
 ```
 
+
+### 多机多卡训练
 ```text
-多机多卡训练 例子 3个机器 每个机器 4个卡
+ 例子 3个机器 每个机器 4个卡
 修改train.py Trainer num_nodes = 3
 MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=0 python train.py 
 MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=1 python train.py 
@@ -37,16 +39,50 @@ MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=2 python train.py
 ```
 
 
-### 是否开启lora finetuning
-    with_lora
+### lora finetuning
+```text
+       global_args = {
+          "load_in_8bit": False, # lora 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+          "num_layers": -1, # 是否使用骨干网络的全部层数 最大1-28， -1 表示全层, 否则只用只用N层
+          "num_layers_key":  "num_layers",
+      }
+         lora_info_args = {
+               'with_lora': True,  # 是否启用lora模块
+               'r': 8,
+               'target_modules': ['query_key_value'],
+               'target_dtype': None,
+               'lora_alpha': 32,
+               'lora_dropout': 0.1,
+               'bias': 'none',  # Bias type for Lora. Can be 'none', 'all' or 'lora_only'"
+               'modules_to_save' : None, # "help": "List of modules apart from LoRA layers to be set as trainable and saved in the final checkpoint. "
+        }
+```
 
 
 ### int高效训练方式
-   lora int8     修改modes.py load_in_8bit = True 修改data_utils.py 对应with_lora=True 
+   lora int8   
+```text
+       global_args = {
+          "load_in_8bit": True, # lora 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+          "num_layers": -1, # 是否使用骨干网络的全部层数 最大1-28， -1 表示全层, 否则只用只用N层
+          "num_layers_key":  "num_layers",
+      }
+         lora_info_args = {
+               'with_lora': True,  # 是否启用lora模块
+               'r': 8,
+               'target_modules': ['query_key_value'],
+               'target_dtype': None,
+               'lora_alpha': 32,
+               'lora_dropout': 0.1,
+               'bias': 'none',  # Bias type for Lora. Can be 'none', 'all' or 'lora_only'"
+               'modules_to_save' : None, # "help": "List of modules apart from LoRA layers to be set as trainable and saved in the final checkpoint. "
+        }
+```
 
 ## 是否开启deepspeed
-    启动则将data_utils.py  修改 enable_deepspeed 
+    修改 enable_deepspeed 
     lora 模式暂时不支持deepspeed
+
 
 ## bf16精度训练
     Trainer.precision='bf16',#需 pl_model.float() 并注释掉 Trainer.max_grad_norm

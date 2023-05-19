@@ -69,6 +69,7 @@ if __name__ == '__main__':
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
+    precision = '16'  # 半精度训练 "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     trainer = ILQLTrainer(
         callbacks=[ checkpoint_callback],
         max_epochs=training_args.max_epochs,
@@ -79,7 +80,7 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         #max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
-        precision=16, #半精度
+        precision=precision, #半精度
     )
     dataHelper = NN_DataHelper(model_args, training_args, data_args,ilql_args=ilql_args)
     config_kwargs = {"torch_dtype": torch.float16}
