@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Time:  11:30
 # @Author: tk
+import torch
+
 from models.llm_model import *
 from models.rrhf_model import *
 '''
@@ -30,6 +32,15 @@ class MyRewardTransformer(MyRewardModel, with_pl=True):
         else:
             model = self.backbone
         return model.forward_returns(*args,**kwargs)
+
+    def load_sft_weight(self,sft_weight_path: str,is_trainable=False,strict=False):
+        if self.lora_args is not None and self.lora_args.with_lora:
+            #加载lora权重
+            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
+                                          is_trainable=is_trainable)
+        else:
+            # 加载sft 或者 p-tuning-v2权重
+            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
 
 class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss, with_pl=True):
@@ -81,6 +92,14 @@ class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss, with_pl=T
     def forward_logits_values(self,*args,**kwargs):
         return self.model.forward(*args,**kwargs)
 
+    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
+        if self.lora_args is not None and self.lora_args.with_lora:
+            # 加载lora权重
+            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
+                                          is_trainable=is_trainable)
+        else:
+            # 加载sft 或者 p-tuning-v2权重
+            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
 
 class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_pl=True):
@@ -137,6 +156,14 @@ class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss, with_p
     def forward_logits_values(self,*args,**kwargs):
         return self.model.forward(*args,**kwargs)
 
+    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
+        if self.lora_args is not None and self.lora_args.with_lora:
+            # 加载lora权重
+            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
+                                          is_trainable=is_trainable)
+        else:
+            # 加载sft 或者 p-tuning-v2权重
+            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
 
 class MyRRHFTransformer(RRHFModelForCausalLM):
@@ -151,32 +178,60 @@ class MyRRHFTransformer(RRHFModelForCausalLM):
             model.print_trainable_parameters()
             self.set_model(model, copy_attr=False)
 
+    def load_sft_weight(self, sft_weight_path: str, is_trainable=False, strict=False):
+        if self.lora_args is not None and self.lora_args.with_lora:
+            # 加载lora权重
+            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
+                                          is_trainable=is_trainable)
+        else:
+            # 加载sft 或者 p-tuning-v2权重
+            self.get_llm_model().load_state_dict(torch.load(sft_weight_path), strict=strict)
 
-def load_reward_model(model_dir) ->MyRewardTransformer:
+
+def load_reward_model(sft_model_dir,sft_weight_path=None) ->MyRewardTransformer:
+    '''
+        sft_model_dir: 模型配置路径 ， 路径下需存在config.json
+        weight_path: 如果是lora 则是lora 权重路径 （）
+                     如果是普通 或者 p-tuning-v2 则是权重文件
+    '''
+
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
     lora_args = lora_args.config
-    config = AutoConfig.from_pretrained(model_dir)
+    config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重
-    lora_args = LoraArguments.from_pretrained(model_dir)
+    lora_args = LoraArguments.from_pretrained(sft_model_dir) if lora_args else None
     pl_module = MyRewardTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
-    # 加载lora权重
-    pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=model_dir,lora_config=lora_args)
+
+    # 加载lora sft 或者 sft 或者 p-tuning-v2 权重
+    if lora_args and sft_weight_path is None:
+        sft_weight_path = sft_model_dir
+    pl_module.load_sft_weight(sft_weight_path)
+
     pl_module.eval()
     pl_module.requires_grad_(False)
     return pl_module
 
 
-def load_ref_model(lora_model_dir,ref_train_info_args) ->MyPPOTransformer:
+def load_ref_model(ref_train_info_args,sft_model_dir,sft_weight_path=None) ->MyPPOTransformer:
+    '''
+        sft_model_dir: 模型配置路径 ， 路径下需存在config.json
+        weight_path: 如果是lora 则是lora 权重路径 （）
+                     如果是普通 或者 p-tuning-v2 则是权重文件
+    '''
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(ref_train_info_args)
     lora_args = lora_args.config
-    config = AutoConfig.from_pretrained(lora_model_dir)
+    config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重
-    lora_args = LoraArguments.from_pretrained(lora_model_dir)
+    lora_args = LoraArguments.from_pretrained(sft_model_dir) if lora_args else None
     pl_module = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
-    # 二次加载权重
-    pl_module.backbone.from_pretrained(pl_module.backbone.model, pretrained_model_name_or_path=lora_model_dir,lora_config=lora_args)
+
+    # 加载lora sft 或者 sft 或者 p-tuning-v2 权重
+    if lora_args and sft_weight_path is None:
+        sft_weight_path = sft_model_dir
+    pl_module.load_sft_weight(sft_weight_path)
+
     pl_module.eval()
     pl_module.requires_grad_(False)
     return pl_module

@@ -22,14 +22,13 @@ if __name__ == '__main__':
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
     lora_args = LoraArguments.from_pretrained(ckpt_dir)
-
     assert lora_args.inference_mode == True
 
     pl_model = MyILQLTransformer(config=config, model_args=model_args, training_args=training_args,
                                  lora_args=lora_args,ilql_args=ilql_args,
                                  load_in_8bit=load_in_8bit, device_map="auto")
-    # 加载lora权重
-    pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_dir, lora_config = lora_args)
+    # 加载sft权重
+    pl_model.load_sft_weight(ckpt_dir)
     if load_in_8bit:
         pl_model.eval().cuda()
     else:
