@@ -1,5 +1,6 @@
 
-## Realize the reinforcement learning training for gpt2 llama bloom and so on llm model
+## llm reinforcement learning
+    Realize the reinforcement learning training for gpt2 llama bloom and so on
 
 
 ## install
