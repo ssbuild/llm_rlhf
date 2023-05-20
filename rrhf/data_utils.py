@@ -74,8 +74,18 @@ class NN_DataHelper(DataHelper):
         for i, b in enumerate(batch):
             for k in b:
                 o[k].append(torch.tensor(b[k]))
-        seqlen = np.max([len(_) for _ in o['input_ids']])
-        raise NotImplemented
+
+        pad_token_id = self.tokenizer.pad_token_id
+        input_ids = torch.nn.utils.rnn.pad_sequence(
+            o["input_ids"], batch_first=True, padding_value=pad_token_id
+        )
+        labels = torch.nn.utils.rnn.pad_sequence(
+            o["labels"], batch_first=True, padding_value=-100
+        )
+
+        o["input_ids"] = input_ids
+        o["attention_mask"] = input_ids.ne(pad_token_id)
+        o["labels"] = labels
         return o
 
 

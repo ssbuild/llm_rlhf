@@ -54,7 +54,7 @@ class TokenIds:
         query, responses,scores = data
         ds = []
         query_input_ids = tokenizer.encode(query,padding="longest",max_length=max_seq_length,truncation=True)
-        for res in responses:
+        for res,score in zip(responses,scores):
             if stop_response:
                 r = stop_response(res)
             else:
@@ -63,10 +63,11 @@ class TokenIds:
             _truncate_seq_pair(query_input_ids,res_input_ids,max_seq_length)
 
             input_ids = query_input_ids + res_input_ids
-            labels = [-100] * len(query_input_ids)
-
+            labels = [-100] * len(query_input_ids) + res_input_ids
+            input_ids = np.asarray(input_ids, dtype=np.int32)
             ds.append({
-                "input_ids": np.asarray(input_ids,dtype=np.int32),
+                "input_ids": input_ids,
                 "labels": np.asarray(labels,dtype=np.int32),
+                "score": np.asarray(score,dtype=np.float32),
             })
         return ds
