@@ -1,4 +1,6 @@
 
+## Realize the reinforcement learning training for gpt2 llama bloom and so on llm model
+
 
 ## install
     llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
@@ -11,7 +13,6 @@
 
 ## update information
 - [deep_training](https://github.com/ssbuild/deep_training)
-
 
 
     
