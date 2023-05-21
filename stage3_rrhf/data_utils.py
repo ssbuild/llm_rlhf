@@ -73,19 +73,33 @@ class NN_DataHelper(DataHelper):
         o = {k: [] for k in batch[0].keys()}
         for i, b in enumerate(batch):
             for k in b:
-                o[k].append(torch.tensor(b[k]))
+                x = torch.tensor(b[k])
+                if x.dim() > 1:
+                    x = torch.transpose(x,1,0)
+                o[k].append(x)
 
         pad_token_id = self.tokenizer.pad_token_id
-        input_ids = torch.nn.utils.rnn.pad_sequence(
-            o["input_ids"], batch_first=True, padding_value=pad_token_id
-        )
-        labels = torch.nn.utils.rnn.pad_sequence(
-            o["labels"], batch_first=True, padding_value=-100
-        )
+        for k in batch[0].keys():
+            pad_val = None
+            if k == 'input_ids':
+                pad_val = pad_token_id
+            elif k == 'labels':
+                pad_val = -100
 
-        o["input_ids"] = input_ids
-        o["attention_mask"] = input_ids.ne(pad_token_id)
-        o["labels"] = labels
+            val = o[k]
+            if pad_val is not None:
+                val = torch.nn.utils.rnn.pad_sequence(
+                    val, batch_first=True, padding_value=pad_val
+                )
+            else:
+                val = torch.stack(val)
+
+            if val.dim() > 2:
+                val = torch.transpose(val ,2, 1)
+            val = torch.reshape(val,(-1,*val.size()[2:]))
+            o[k] = val
+
+        o['attention_mask'] = torch.ne(o['input_ids'],pad_token_id)
         return o
 
 

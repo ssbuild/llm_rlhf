@@ -83,7 +83,7 @@ if __name__ == '__main__':
     )
 
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
+    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args,rrhf_weight=1.0,length_penalty=1.0)
     config_kwargs = {"torch_dtype": torch.float16}
     if global_args["num_layers"] > 0:
         config_kwargs[global_args["num_layers_key"]] = global_args["num_layers"]

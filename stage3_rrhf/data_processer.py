@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/4/20 8:32
+import copy
 import json
 import numpy as np
 from transformers import PreTrainedTokenizer
@@ -18,6 +19,7 @@ def stop_response(res):
     return res
 
 
+
 class CorpusPreprocess:
     @classmethod
     def process(cls,tokenizer,lines):
@@ -27,9 +29,9 @@ class CorpusPreprocess:
             if not jd:
                 continue
             prompt = jd['prompt']
-            responses = jd['responses']
-            scores = jd['scores']
-            D.append((prompt, responses, scores))
+            response = jd['response']
+            score = jd['score']
+            D.append((prompt, response, score))
         return D
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
@@ -48,26 +50,45 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     else:
       tokens_b.pop()
 
+
+def tokenizer_one(tokenizer: PreTrainedTokenizer,prompt : str,response :str,max_length):
+    if not response.endswith(tokenizer.eos_token):
+        response += tokenizer.eos_token
+
+    query_input_ids = tokenizer.encode(prompt, padding="longest", max_length=max_length, truncation=True)
+
+    res_input_ids = tokenizer.encode(response + tokenizer.eos_token, padding="longest", max_length=max_length,
+                                     truncation=True)
+    _truncate_seq_pair(query_input_ids, res_input_ids, max_length)
+
+    input_ids = query_input_ids + res_input_ids
+    return input_ids
 class TokenIds:
     @classmethod
     def process(cls,data,tokenizer: PreTrainedTokenizer,max_seq_length: int):
         query, responses,scores = data
-        ds = []
+
+        input_ids_all,labels_all,score_all = [],[],[]
         query_input_ids = tokenizer.encode(query,padding="longest",max_length=max_seq_length,truncation=True)
+
         for res,score in zip(responses,scores):
             if stop_response:
                 r = stop_response(res)
             else:
                 r = res
+            query_input_ids_copy = copy.deepcopy(query_input_ids)
             res_input_ids = tokenizer.encode(r + tokenizer.eos_token, padding="longest", max_length=max_seq_length, truncation=True)
-            _truncate_seq_pair(query_input_ids,res_input_ids,max_seq_length)
+            _truncate_seq_pair(query_input_ids_copy,res_input_ids,max_seq_length)
 
-            input_ids = query_input_ids + res_input_ids
-            labels = [-100] * len(query_input_ids) + res_input_ids
-            input_ids = np.asarray(input_ids, dtype=np.int32)
-            ds.append({
-                "input_ids": input_ids,
-                "labels": np.asarray(labels,dtype=np.int32),
-                "score": np.asarray(score,dtype=np.float32),
-            })
-        return ds
+            input_ids = query_input_ids_copy + res_input_ids
+            labels = [-100] * len(query_input_ids_copy) + res_input_ids
+            input_ids_all.append(input_ids)
+            labels_all.append(labels)
+            score_all.append(score)
+
+        maxlen = max(list(map(lambda x:len(x),input_ids_all)))
+        return {
+            "input_ids": np.stack([np.asarray(_ + [0] * (maxlen - len(_)), dtype=np.int32) for _ in input_ids_all]),
+            "labels": np.stack([np.asarray(_ + [-100] * (maxlen - len(_)), dtype=np.int32) for _ in labels_all]),
+            "scores": np.stack([np.asarray(_, dtype=np.float32) for _ in score_all]),
+        }

@@ -79,7 +79,7 @@ train_info_args = {
 
     'convert_onnx': False, # 转换onnx模型
     'do_train': True,
-    'train_file':  [ './data/train.json'],
+    'train_file':  [ './data/train_score.json'],
     'max_epochs': 20,
     'max_steps': -1,
     'optimizer': 'lion', # one of adamw,adam,lamb,lion
@@ -108,9 +108,9 @@ train_info_args = {
 
 
     'optimizer_betas': (0.9, 0.999),
-    'train_batch_size': 4,
-    'eval_batch_size': 2,
-    'test_batch_size': 2,
+    'train_batch_size': 1, # 建议 1, 如果每组候选聚集较大耗用现存较大
+    'eval_batch_size': 1,
+    'test_batch_size': 1,
     'learning_rate': 2e-5,  #
     'adam_epsilon': 1e-8,
     'gradient_accumulation_steps': 1,

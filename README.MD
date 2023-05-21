@@ -9,7 +9,7 @@
     reward      ok deep_training >=0.1.7
     ppo         ok deep_training >=0.1.7
     ilql        ok deep_training >=0.1.7
-    rrhf        testing ...
+    rrhf        ok deep_training >=0.1.7
 
 
 ## update information
