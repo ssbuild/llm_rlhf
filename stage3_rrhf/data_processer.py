@@ -30,7 +30,7 @@ class CorpusPreprocess:
                 continue
             prompt = jd['prompt']
             response = jd['response']
-            score = jd['score']
+            score = jd['scores']
             D.append((prompt, response, score))
         return D
 
