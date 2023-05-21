@@ -95,6 +95,3 @@ MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=2 python train.py
     Trainer.precision='16',#需 pl_model.float()
 
 
-## 注意事项
-
-  'train_batch_size': 1, # 建议 1, 如果每组候选聚集较大耗用现存较大
