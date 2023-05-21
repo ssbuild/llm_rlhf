@@ -10,7 +10,7 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyPPOTransformer, Generate, load_in_8bit,LoraArguments,PPOArguments
+from models import MyPPOTransformer, Generate,LoraArguments,PPOArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
@@ -25,8 +25,7 @@ if __name__ == '__main__':
 
 
 
-    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args,
-                                load_in_8bit=global_args["load_in_8bit"], device_map="auto")
+    pl_model = MyPPOTransformer(config=config, model_args=model_args, training_args=training_args)
 
     pl_model.eval().half().cuda()
 
