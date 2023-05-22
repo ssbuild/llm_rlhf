@@ -8,7 +8,7 @@
     python >= 3.10
     reward      ok deep_training >=0.1.7
     ppo         ok deep_training >=0.1.7
-    ilql        ok deep_training >=0.1.7
+    ilql        ok deep_training >=0.1.7@post0
     rrhf        ok deep_training >=0.1.7
 
 
