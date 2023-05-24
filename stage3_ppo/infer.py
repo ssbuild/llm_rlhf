@@ -15,7 +15,7 @@ from models import MyPPOTransformer, Generate,LoraArguments,PPOArguments
 if __name__ == '__main__':
     train_info_args['seed'] = None
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,PPOArguments))
-    model_args, training_args, data_args, _,_ = parser.parse_dict(train_info_args)
+    model_args, data_args= parser.parse_dict(train_info_args,allow_extra_keys=True)
 
 
 

@@ -6,10 +6,10 @@
 ## install
     llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
     python >= 3.10
-    reward      ok deep_training >=0.1.7
-    ppo         ok deep_training >=0.1.7
-    ilql        ok deep_training >=0.1.7@post0
-    rrhf        ok deep_training >=0.1.7
+    reward      ok deep_training >=0.1.8
+    ppo         ok deep_training >=0.1.8
+    ilql        ok deep_training >=0.1.8
+    rrhf        ok deep_training >=0.1.8
 
 
 ## update information

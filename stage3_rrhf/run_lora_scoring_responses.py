@@ -32,7 +32,7 @@ if __name__ == '__main__':
                                    # device_map={"": 0},
                                    )
     # 加载lora权重
-    pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_dir, lora_config = lora_args)
+    pl_model.load_sft_weight(ckpt_dir)
     if getattr(pl_model.get_llm_model(), "is_loaded_in_8bit", False):
         pl_model.eval().cuda()
     else:
