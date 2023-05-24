@@ -4,14 +4,12 @@ import sys
 sys.path.append('..')
 from config.reward_config import get_deepspeed_config
 
-import os
-import numpy as np
 import torch
-from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
+from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyRewardTransformer,LoraArguments
+from models import MyRewardTransformer
 
 deep_config = get_deepspeed_config()
 

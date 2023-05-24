@@ -5,16 +5,15 @@ import sys
 sys.path.append('..')
 
 import os
-import torch
-from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
-from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
+from deep_training.data_helper import ModelArguments, DataArguments
+from transformers import HfArgumentParser,AutoConfig
 
-from data_utils import train_info_args, NN_DataHelper,global_args
-from models import MyPPOTransformer, Generate,LoraArguments,PPOArguments
+from data_utils import train_info_args, NN_DataHelper
+from models import MyPPOTransformer, Generate,LoraArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,PPOArguments))
+    parser = HfArgumentParser((ModelArguments, DataArguments))
     model_args, data_args= parser.parse_dict(train_info_args,allow_extra_keys=True)
 
 

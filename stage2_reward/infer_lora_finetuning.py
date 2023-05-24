@@ -4,12 +4,11 @@ import sys
 sys.path.append('..')
 
 import os
-import numpy as np
 import torch
-from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
+from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
-from data_utils import train_info_args, NN_DataHelper,global_args
+from data_utils import train_info_args, NN_DataHelper
 from models import MyRewardTransformer,LoraArguments
 
 if __name__ == '__main__':
