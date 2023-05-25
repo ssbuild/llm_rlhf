@@ -9,10 +9,8 @@ from deep_training.data_helper import ModelArguments, DataArguments
 from tqdm import tqdm
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
-from data_utils import train_info_args, NN_DataHelper,get_deepspeed_config
+from data_utils import train_info_args, NN_DataHelper
 from models import MyRewardTransformer,LoraArguments
-
-deepspeed_config = get_deepspeed_config()
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
@@ -25,25 +23,21 @@ if __name__ == '__main__':
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
+    lora_args = LoraArguments.from_pretrained(ckpt_dir)
 
-    pl_model = MyRewardTransformer(config=config, model_args=model_args)
+    assert lora_args.inference_mode == True
 
-    ###################### 注意 选最新权重
-    # 选择最新的权重 ， 根据时间排序 选最新的
-    if deepspeed_config is None:
-        train_weight = './best_ckpt/last.ckpt'
-    else:
-        # 建议直接使用转换脚本命令 支持 deepspeed stage 0,1,2,3， 生成 ./best_ckpt/last.ckpt/best.pt 权重文件
-        # cd best_ckpt/last.ckpt
-        # python zero_to_fp32.py . best.pt
-        train_weight = './best_ckpt/last.ckpt/best.pt'
-
-
-
+    pl_model = MyRewardTransformer(config=config, model_args=model_args, lora_args=lora_args,
+                                   # load_in_8bit=global_args["load_in_8bit"],
+                                   # # device_map="auto",
+                                   # device_map={"": 0},
+                                   )
     # 加载lora权重
-    pl_model.load_sft_weight(train_weight)
-
-    pl_model.eval().half().cuda()
+    pl_model.load_sft_weight(ckpt_dir)
+    if getattr(pl_model.get_llm_model(), "is_loaded_in_8bit", False):
+        pl_model.eval().cuda()
+    else:
+        pl_model.eval().half().cuda()
     pl_model.requires_grad_(False)
 
 
