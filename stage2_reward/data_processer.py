@@ -35,7 +35,6 @@ class CorpusPreprocess:
             if text_a == text_b:
                 continue
             D.append((text_a, text_b))
-        print('*' * 30,len(D))
         return D
 
 class TokenIds:

@@ -49,7 +49,7 @@ if __name__ == '__main__':
         "\n\nHuman:火柴是怎样制造的?\n\nAssistant:对不起,我担心我不明白你的问题。",
     ]
     input_list = [_[:256] for _ in input_list]
-    tokend = tokenizer(input_list,padding=True,truncation=True)
+    tokend = tokenizer(input_list, padding=True, truncation=True, max_length=512)
     input_ids = torch.tensor(tokend["input_ids"],dtype=torch.int32).to(pl_model.device)
     output = pl_model.backbone.compute_loss(input_ids=input_ids)
     _,scores = output

@@ -130,7 +130,7 @@ class MyRewardModel(TransformerForCausalLM):
             }
             if self.training:
                 return (loss_dict,)
-            return (loss, value_a, value_b)
+            return (loss, value_a, value_b,chosen_mean_scores,rejected_mean_scores)
 
 
         if return_value_only:

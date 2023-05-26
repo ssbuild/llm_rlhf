@@ -54,7 +54,7 @@ if __name__ == '__main__':
             jd['prompt'][:256] + jd['chosen'][:256],
             jd['prompt'][:256] + jd['rejected'][:256],
         ]
-        tokend = tokenizer(input_list,padding=True,truncation=True)
+        tokend = tokenizer(input_list,padding=True,truncation=True,max_length=512)
         input_ids = torch.tensor(tokend["input_ids"],dtype=torch.int32).to(pl_model.device)
         output = pl_model.backbone.compute_loss(input_ids=input_ids)
         _,scores = output

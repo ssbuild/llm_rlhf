@@ -88,3 +88,10 @@ MASTER_ADDR=10.0.0.1 MASTER_PORT=6667 WORLD_SIZE=12 NODE_RANK=2 python train.py
 
 ## 精度训练
   precision='16'  # 自行修改 "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
+
+
+
+# opt-350m 全参数finetuning loss
+  
+![image](data/1.png)
+![image](data/2.png)

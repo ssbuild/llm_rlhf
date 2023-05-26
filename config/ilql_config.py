@@ -83,9 +83,9 @@ train_info_args = {
     'model_type': 'opt',
     # 预训练模型路径 , 从0训练，则置空
 
-    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
-    'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
-    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
+    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
+    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
+    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-560m',
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-560m/config.json',
@@ -95,9 +95,9 @@ train_info_args = {
     # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7/config.json',
     # 'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
 
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
-    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
+    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
+    'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
+    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
 
     # 'model_name_or_path': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
     # 'config_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf/config.json',
@@ -143,7 +143,7 @@ train_info_args = {
     'weight_decay': 0,
     'warmup_steps': 0,
     'output_dir': './output',
-    'max_seq_length':  256, #
+    'max_seq_length':  512, #
     'max_target_length': 100,  # 预测最大长度
     'use_fast_tokenizer': False,
     
