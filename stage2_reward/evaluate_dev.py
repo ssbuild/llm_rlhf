@@ -38,8 +38,6 @@ if __name__ == '__main__':
         # python zero_to_fp32.py . best.pt
         train_weight = './best_ckpt/last.ckpt/best.pt'
 
-
-
     # 加载lora权重
     pl_model.load_sft_weight(train_weight)
 
