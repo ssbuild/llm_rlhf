@@ -26,6 +26,10 @@ global_args = {
     "num_layers_key":  "num_hidden_layers",
 }
 
+if global_args['load_in_4bit'] != True:
+    global_args['quantization_config'] = None
+
+
 lora_info_args = {
     'with_lora': True,  # 是否启用lora模块
     'lora_type': 'lora',
@@ -64,6 +68,7 @@ adalora_info_args = {
     'total_step': None, #The total training steps.
     'rank_pattern': None, #The saved rank pattern.
 }
+
 
 train_info_args = {
     'devices': 1,
