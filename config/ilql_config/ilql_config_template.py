@@ -1,16 +1,37 @@
 # coding=utf8
 # @Time    : 2023/5/7 17:28
 # @Author  : tk
-# @FileName: reward_config
+# @FileName: rlhf_config
 import json
 import os
 
+import torch
+from transformers import BitsAndBytesConfig
+
 # 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
+
 global_args = {
-    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启
+    "load_in_4bit": False,
+
+    #load_in_4bit 量化配置
+    "quantization_config": BitsAndBytesConfig(
+        load_in_4bit = True,
+        llm_int8_threshold=6.0,
+        llm_int8_has_fp16_weight=False,
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+    ),
+    "config_merge": {
+    },
     "num_layers": -1, # 是否使用骨干网络的全部层数 ， -1 表示全层, 否则只用只用N层
     "num_layers_key":  "num_hidden_layers",
 }
+
+if global_args['load_in_4bit'] != True:
+    global_args['quantization_config'] = None
+
 
 lora_info_args = {
     'with_lora': True,  # 是否启用lora模块
@@ -23,7 +44,7 @@ lora_info_args = {
     'lora_dropout': 0.1,
     'fan_in_fan_out': False,
     'bias': 'none',  # Bias type for Lora. Can be 'none', 'all' or 'lora_only'"
-    'modules_to_save' : ['score'],
+    'modules_to_save' : ['score','q_heads'],
 }
 
 adalora_info_args = {
@@ -50,6 +71,43 @@ adalora_info_args = {
     'total_step': None, #The total training steps.
     'rank_pattern': None, #The saved rank pattern.
 }
+
+prompt_info_args = {
+    "with_prompt": False,
+    "prompt_type": "prefix_tuning", # one of prompt_tuning,p_tuning,prefix_tuning,adaption_prompt
+    "task_type": "causal_lm", #  one of seq_cls,seq_2_seq_lm,causal_lm,token_cls
+    "prefix_projection": False, # Whether to project the prefix tokens"
+    "num_virtual_tokens": 16, # Number of virtual tokens
+    # "token_dim": 2048, # The hidden embedding dimension of the base transformer model.
+    # "num_transformer_submodules": 1, # The number of transformer submodules in the base transformer model.
+    # "num_attention_heads" : 24, # The number of attention heads in the base transformer model.
+    # "num_layers": 1, # The number of layers in the base transformer model.
+    # "encoder_hidden_size": 2048, # The hidden size of the encoder
+}
+
+ilql_info_args = {
+    "model_arch_type": "causal" , # one of one of causal, prefixlm,seq2seq
+    "tau":  0.7,
+    "gamma":  0.99,
+    "cql_scale":  0.1,
+    "awac_scale":  1,
+    "alpha":  0.001,
+    "beta":  0,
+    "steps_for_target_q_sync": 50, # 每训练50步 同步一次heads
+    "two_qs": False, # 是否使用双头 占用显存较大
+    # Additioanl kwargs for the generation
+    "gen_kwargs": dict(
+        max_new_tokens=128,
+        top_k=0,
+        top_p=1.0,
+        do_sample=True,
+    ),
+    "gen_experience_kwargs": None, # Additioanl kwargs for the gen_experience_kwargs
+
+}
+
+
+
 
 train_info_args = {
     'devices': 1,
@@ -79,16 +137,19 @@ train_info_args = {
 
     'convert_onnx': False, # 转换onnx模型
     'do_train': True,
-    'train_file':  [ './data/train_score.json'],
+    'train_file':  [ './data/train.json'],
     'max_epochs': 20,
     'max_steps': -1,
-    'optimizer': 'lion', # one of adamw,adam,lamb,lion
+    'optimizer': 'lion', # one of [lamb,adamw_hf,adamw,adamw_torch,adamw_torch_fused,adamw_torch_xla,adamw_apex_fused,adafactor,adamw_anyprecision,sgd,adagrad,adamw_bnb_8bit,adamw_8bit,lion_8bit,lion_32bit,paged_adamw_32bit,paged_adamw_8bit,paged_lion_32bit,paged_lion_8bit]
 
-    # 'scheduler_type': 'CAWR',
-    # 'scheduler':{'T_mult': 1, 'rewarm_epoch_num': 0.5, 'verbose': False},
+    'scheduler_type': 'CAWR', #one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau, cosine,cosine_with_restarts,polynomial,constant,constant_with_warmup,inverse_sqrt,reduce_lr_on_plateau]
+    'scheduler':{'T_mult': 1,
+             'rewarm_epoch_num': 0.5,  # 如果 max_epochs is not None !
+             # 'T_0': 50000,    # 如果 max_epochs is None , 设定步数
+             'verbose': False},
 
-    'scheduler_type': 'linear',# one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau
-    'scheduler': None,
+    # 'scheduler_type': 'linear',# one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau
+    # 'scheduler': None,
 
     # 切换scheduler类型
     # 'scheduler_type': 'WarmupCosine',
@@ -106,11 +167,10 @@ train_info_args = {
     # 'scheduler_type': 'CAL',
     # 'scheduler': {'rewarm_epoch_num': 2,'verbose': True},
 
-
     'optimizer_betas': (0.9, 0.999),
-    'train_batch_size': 1, # 建议 1, 如果每组候选聚集较大耗用现存较大
-    'eval_batch_size': 1,
-    'test_batch_size': 1,
+    'train_batch_size': 2,
+    'eval_batch_size': 2,
+    'test_batch_size': 2,
     'learning_rate': 2e-5,  #
     'adam_epsilon': 1e-8,
     'gradient_accumulation_steps': 1,
@@ -119,24 +179,25 @@ train_info_args = {
     'warmup_steps': 0,
     'output_dir': './output',
     'max_seq_length':  512, #
-    'max_target_length': 100,  # 预测最大长度, 保留字段
+    'max_target_length': 100,  # 预测最大长度
     'use_fast_tokenizer': False,
-    
 
     ##############  lora模块
-    'lora': {**lora_info_args},
-    'adalora': {**adalora_info_args},
-
+    'lora': lora_info_args,
+    'adalora': adalora_info_args,
+    'prompt': prompt_info_args,
 }
 
 
 
-enable_deepspeed = False
+#配置检查
 
-def get_deepspeed_config():
-    # 是否开启deepspeed
-    if not enable_deepspeed:
-        return None
-    with open(os.path.join(os.path.dirname(__file__),'deepspeed.json'), mode='r', encoding='utf-8') as f:
-        deepspeed_config = json.loads(f.read())
-    return deepspeed_config
+
+if global_args['load_in_8bit'] == global_args['load_in_4bit'] and global_args['load_in_8bit'] == True:
+    raise Exception('load_in_8bit and load_in_4bit only set one at same time!')
+
+if lora_info_args['with_lora'] == adalora_info_args['with_lora'] and lora_info_args['with_lora'] == True:
+    raise Exception('lora and adalora can set one at same time !')
+
+if lora_info_args['with_lora'] == prompt_info_args['with_prompt'] and lora_info_args['with_lora'] == True:
+    raise Exception('lora and prompt can set one at same time !')

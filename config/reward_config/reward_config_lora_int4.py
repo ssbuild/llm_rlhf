@@ -5,12 +5,29 @@
 import json
 import os
 
+import torch
+from transformers import BitsAndBytesConfig
+
 # 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
 global_args = {
-    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启
+    "load_in_4bit": True,
+
+    #load_in_4bit 量化配置
+    "quantization_config": BitsAndBytesConfig(
+        load_in_4bit = True,
+        llm_int8_threshold=6.0,
+        llm_int8_has_fp16_weight=False,
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+    ),
     "num_layers": -1, # 是否使用骨干网络的全部层数 ， -1 表示全层, 否则只用只用N层
     "num_layers_key":  "num_hidden_layers",
 }
+
+if global_args['load_in_4bit'] != True:
+    global_args['quantization_config'] = None
 
 lora_info_args = {
     'with_lora': True,  # 是否启用lora模块
@@ -82,13 +99,17 @@ train_info_args = {
     'train_file':  [ './data/train.json'],
     'max_epochs': 20,
     'max_steps': -1,
-    'optimizer': 'lion', # one of adamw,adam,lamb,lion
+    'optimizer': 'lion', # one of [lamb,adamw_hf,adamw,adamw_torch,adamw_torch_fused,adamw_torch_xla,adamw_apex_fused,adafactor,adamw_anyprecision,sgd,adagrad,adamw_bnb_8bit,adamw_8bit,lion_8bit,lion_32bit,paged_adamw_32bit,paged_adamw_8bit,paged_lion_32bit,paged_lion_8bit]
+
+    'scheduler_type': 'CAWR', #one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau, cosine,cosine_with_restarts,polynomial,constant,constant_with_warmup,inverse_sqrt,reduce_lr_on_plateau]
+    'scheduler':{'T_mult': 1,
+             'rewarm_epoch_num': 0.5,  # 如果 max_epochs is not None !
+             # 'T_0': 50000,    # 如果 max_epochs is None , 设定步数
+             'verbose': False},
 
     # 'scheduler_type': 'CAWR',
     # 'scheduler':{'T_mult': 1, 'rewarm_epoch_num': 0.5, 'verbose': False},
 
-    'scheduler_type': 'linear',# one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau
-    'scheduler': None,
 
     # 切换scheduler类型
     # 'scheduler_type': 'WarmupCosine',
@@ -131,12 +152,12 @@ train_info_args = {
 
 
 
-enable_deepspeed = False
 
-def get_deepspeed_config():
-    # 是否开启deepspeed
-    if not enable_deepspeed:
-        return None
-    with open(os.path.join(os.path.dirname(__file__),'deepspeed.json'), mode='r', encoding='utf-8') as f:
-        deepspeed_config = json.loads(f.read())
-    return deepspeed_config
+#配置检查
+
+
+if global_args['load_in_8bit'] == global_args['load_in_4bit'] and global_args['load_in_8bit'] == True:
+    raise Exception('load_in_8bit and load_in_4bit only set one at same time!')
+
+if lora_info_args['with_lora'] == adalora_info_args['with_lora'] and lora_info_args['with_lora'] == True:
+    raise Exception('lora and adalora can set one at same time !')

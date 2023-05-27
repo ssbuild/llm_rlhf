@@ -10,19 +10,28 @@ __all__ = [
 
 class RRHFModelForCausalLM(TransformerForCausalLM):
     def __init__(self,*args,**kwargs):
-        # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+        # 如果显卡支持int8 可以开启
         load_in_8bit = kwargs.get('load_in_8bit', False)
-        if not load_in_8bit:
+        load_in_4bit = kwargs.get('load_in_4bit', False)
+        if not load_in_4bit:
+            quantization_config = kwargs.get("quantization_config", None)
+            if quantization_config:
+                load_in_4bit = quantization_config.load_in_4bit
+
+        if not load_in_8bit and not load_in_4bit:
             kwargs.pop("device_map", None)
+            kwargs.pop("quantization_config", None)
         super(RRHFModelForCausalLM, self).__init__(*args, **kwargs)
 
-        if load_in_8bit:
-            setattr(self.model, 'model_parallel', True)
-            setattr(self.model, 'is_parallelizable', True)
-            self.model.enable_input_require_grads()
 
         self.length_penalty = kwargs.get('length_penalty',1.0)
         self.rrhf_weight = kwargs.get('rrhf_weight', 1.0)
+
+    def enable_input_require_grads(self):
+        setattr(self.model, 'model_parallel', True)
+        setattr(self.model, 'is_parallelizable', True)
+        # self.model.gradient_checkpointing_enable()
+        self.model.enable_input_require_grads()
 
     def gather_logits_labels(self, logits, labels,mask):
         new_logits = logits.clone()  # Create a copy to avoid in-place modification

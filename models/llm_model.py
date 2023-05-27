@@ -28,10 +28,16 @@ from deep_training.nlp.models.rl.modeling_ilql import AutoModelForCausalLMWithIL
 
 class MyRewardModel(TransformerForCausalLM):
     def __init__(self, *args, **kwargs):
-        # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
         load_in_8bit = kwargs.get('load_in_8bit', False)
-        if not load_in_8bit:
+        load_in_4bit = kwargs.get('load_in_4bit', False)
+        if not load_in_4bit:
+            quantization_config = kwargs.get("quantization_config", None)
+            if quantization_config:
+                load_in_4bit = quantization_config.load_in_4bit
+
+        if not load_in_8bit and not load_in_4bit:
             kwargs.pop("device_map", None)
+            kwargs.pop("quantization_config", None)
         super(MyRewardModel, self).__init__(*args, **kwargs)
 
         base_model_prefix = self.base_model_prefix[:-1] if self.base_model_prefix.endswith('_') else self.base_model_prefix
@@ -44,6 +50,12 @@ class MyRewardModel(TransformerForCausalLM):
             setattr(self.model, 'model_parallel', True)
             setattr(self.model, 'is_parallelizable', True)
             self.model.enable_input_require_grads()
+
+    def enable_input_require_grads(self):
+        setattr(self.model, 'model_parallel', True)
+        setattr(self.model, 'is_parallelizable', True)
+        # self.model.gradient_checkpointing_enable()
+        self.model.enable_input_require_grads()
 
     def forward_value(self,**batch):
         state = self.transformer_bone(**batch)[0]
@@ -146,17 +158,27 @@ class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
         if hidden_size is None:
             hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim',
                                                                 None) else config.hidden_size
-        # 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+        # 如果显卡支持int8 可以开启
         load_in_8bit = kwargs.get('load_in_8bit', False)
-        if not load_in_8bit:
+        load_in_4bit = kwargs.get('load_in_4bit', False)
+        if not load_in_4bit:
+            quantization_config = kwargs.get("quantization_config", None)
+            if quantization_config:
+                load_in_4bit = quantization_config.load_in_4bit
+
+        if not load_in_8bit and not load_in_4bit:
             kwargs.pop("device_map", None)
+            kwargs.pop("quantization_config", None)
 
         super(PPOModelForCausalLMWithValueHead, self).__init__(*args,hidden_size=hidden_size, up_sampling_score=up_sampling_score, **kwargs)
 
-        if load_in_8bit:
-            setattr(self.model, 'model_parallel', True)
-            setattr(self.model, 'is_parallelizable', True)
-            self.model.enable_input_require_grads()
+
+
+    def enable_input_require_grads(self):
+        setattr(self.model, 'model_parallel', True)
+        setattr(self.model, 'is_parallelizable', True)
+        # self.model.gradient_checkpointing_enable()
+        self.model.enable_input_require_grads()
 
 
 class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):
@@ -164,16 +186,24 @@ class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):
         config = kwargs.get('config')
         if hidden_size is None:
             hidden_size = config.word_embed_proj_dim if getattr(config, 'word_embed_proj_dim', None) else config.hidden_size
+        # 如果显卡支持int8 可以开启
         load_in_8bit = kwargs.get('load_in_8bit', False)
-        if not load_in_8bit:
+        load_in_4bit = kwargs.get('load_in_4bit', False)
+        if not load_in_4bit:
+            quantization_config = kwargs.get("quantization_config", None)
+            if quantization_config:
+                load_in_4bit = quantization_config.load_in_4bit
+
+        if not load_in_8bit and not load_in_4bit:
             kwargs.pop("device_map", None)
+            kwargs.pop("quantization_config", None)
         super(ILQLModelForCausalLMWithILQLHeads, self).__init__(*args,hidden_size=hidden_size,up_sampling_score=up_sampling_score, **kwargs)
 
-        if load_in_8bit:
-            setattr(self.model, 'model_parallel', True)
-            setattr(self.model, 'is_parallelizable', True)
-            self.model.enable_input_require_grads()
-
+    def enable_input_require_grads(self):
+        setattr(self.model, 'model_parallel', True)
+        setattr(self.model, 'is_parallelizable', True)
+        # self.model.gradient_checkpointing_enable()
+        self.model.enable_input_require_grads()
 
 
 
