@@ -1,6 +1,6 @@
 
 ## llm reinforcement learning
-    Realize the reinforcement learning training for gpt2 llama bloom and so on
+    Realize the reinforcement learning training for gpt2 llama bloom,cpm-ant and so on.
 
 
 ## update information
@@ -27,6 +27,7 @@
 - [bloom第三方中文训练模型](https://huggingface.co/Langboat/bloom-6b4-zh)  # 注意 需要修改tokenizer_config.json BloomTokenizer -> BloomTokenizerFast
 - [opt预训练模型](https://huggingface.co/facebook)
 - [llama预训练模型](https://huggingface.co/decapoda-research)
+- [cpm-ant-10b](https://huggingface.co/openbmb/cpm-ant-10b)
 
 
 ## data sample
