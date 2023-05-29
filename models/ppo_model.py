@@ -6,7 +6,7 @@
 from typing import List, Tuple, Optional, Union
 import torch
 from deep_training.nlp.models.rl.modeling_ppo import AutoModelForCausalLMWithValueHead
-from deep_training.nlp.rl.ppo.configuration import PPOConfig
+from deep_training.nlp.rl.ppo.configuration import PPOConfig,PPOArguments
 from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss
 from transformers import AdamW
 from models.model_weight import *
