@@ -84,7 +84,7 @@ class RRHFModelForCausalLM(TransformerForCausalLM):
 
 
 
-class MyRRHFTransformer(RRHFModelForCausalLM,SftWeightMinMax,with_pl=True):
+class MyRRHFTransformer(RRHFModelForCausalLM,ModelWeightMinMax,with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)

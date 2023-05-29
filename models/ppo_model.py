@@ -47,7 +47,7 @@ class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):
 
 
 
-class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss,SftWeightMinMax, with_pl=True):
+class MyPPOTransformer(PPOModelForCausalLMWithValueHead, PPOModelLoss,ModelWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)

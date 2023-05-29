@@ -135,7 +135,7 @@ class RewardModel(TransformerForCausalLM):
 
 
 
-class MyRewardTransformer(RewardModel, SftWeightMinMax, with_pl=True):
+class MyRewardTransformer(RewardModel, ModelWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)

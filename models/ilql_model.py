@@ -34,7 +34,7 @@ class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):
         self.model.enable_input_require_grads()
 
 
-class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss,SftWeightMinMax, with_pl=True):
+class MyILQLTransformer(ILQLModelForCausalLMWithILQLHeads, ILQLModelLoss,ModelWeightMinMax, with_pl=True):
     def __init__(self, *args, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         prompt_args: PromptLearningConfig = kwargs.pop('prompt_args', None)
