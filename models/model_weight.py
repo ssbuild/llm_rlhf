@@ -97,10 +97,17 @@ class ModelWeightMinMax:
                                 __.append(missing_key)
                     for _ in __:
                         missing_keys.remove(_)
+
                 if missing_keys:
-                    raise ValueError('err in load_sft_weight missing_keys',missing_keys)
+                    if strict:
+                        raise ValueError('Error in load_sft_weight missing_keys',missing_keys)
+                    else:
+                        print('Error in load_sft_weight missing_keys',missing_keys)
                 if incompatible_keys.unexpected_keys:
-                    raise ValueError('err in load_sft_weight unexpected_keys', incompatible_keys.unexpected_keys)
+                    if strict:
+                        raise ValueError('Error in load_sft_weight unexpected_keys', incompatible_keys.unexpected_keys)
+                    else:
+                        print(('Error in load_sft_weight unexpected_keys', incompatible_keys.unexpected_keys))
 
                 if not missing_keys and not incompatible_keys.unexpected_keys:
                     return None
