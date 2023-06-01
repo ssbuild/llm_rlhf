@@ -144,9 +144,13 @@ train_info_args = {
     'max_target_length': 100,  # 预测最大长度
     'use_fast_tokenizer': False,
 
+
+    'ilql': {**ilql_info_args},
+
     ##############  lora模块
     'lora': lora_info_args,
     'adalora': adalora_info_args,
+
 }
 
 
