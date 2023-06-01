@@ -6,7 +6,7 @@ from deep_training.nlp.rl.ilql.configuration import ILQLArguments, ILQLConfig
 from deep_training.nlp.rl.ilql.ilql_module import ILQLModelLoss
 from deep_training.nlp.models.rl.modeling_ilql import AutoModelForCausalLMWithILQLHeads
 from transformers import AdamW
-from models.model_weight import *
+from deep_training.trainer.pl.modelweighter import *
 
 
 class ILQLModelForCausalLMWithILQLHeads(AutoModelForCausalLMWithILQLHeads):

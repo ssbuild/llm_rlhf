@@ -9,7 +9,7 @@ from deep_training.nlp.models.rl.modeling_ppo import AutoModelForCausalLMWithVal
 from deep_training.nlp.rl.ppo.configuration import PPOConfig,PPOArguments
 from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss
 from transformers import AdamW
-from models.model_weight import *
+from deep_training.trainer.pl.modelweighter import *
 
 
 class PPOModelForCausalLMWithValueHead(AutoModelForCausalLMWithValueHead):

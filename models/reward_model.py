@@ -4,7 +4,7 @@
 import torch
 from deep_training.nlp.models.transformer import TransformerForCausalLM
 from torch import nn
-from models.model_weight import *
+from deep_training.trainer.pl.modelweighter import *
 
 
 class RewardModel(TransformerForCausalLM):

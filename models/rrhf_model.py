@@ -3,11 +3,12 @@
 import torch
 from deep_training.nlp.models.transformer import TransformerForCausalLM
 from torch.nn import functional as F
-from models.model_weight import *
+from deep_training.trainer.pl.modelweighter import *
 
 
 __all__ = [
-    'RRHFModelForCausalLM'
+    'RRHFModelForCausalLM',
+    'MyRRHFTransformer',
 ]
 
 class RRHFModelForCausalLM(TransformerForCausalLM):
