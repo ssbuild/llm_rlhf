@@ -2,16 +2,12 @@
 # @Time    : 2023/5/7 17:28
 # @Author  : tk
 # @FileName: rlhf_config
-import json
-import os
+from config.constant_map import train_info_models
 
-import torch
-from transformers import BitsAndBytesConfig
-
-# 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
+train_model_config = train_info_models['opt-350m']
 
 global_args = {
-    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启
+    "load_in_8bit": False,
     "load_in_4bit": False,
 
     #load_in_4bit 量化配置
@@ -22,8 +18,7 @@ global_args = {
     "num_layers_key":  "num_hidden_layers",
 }
 
-if global_args['load_in_4bit'] != True:
-    global_args['quantization_config'] = None
+
 
 
 
@@ -52,28 +47,8 @@ ilql_info_args = {
 train_info_args = {
     'devices': 1,
     'data_backend': 'record',
-    'model_type': 'opt',
-    # 预训练模型路径 , 从0训练，则置空
-
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
-    # 'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
-
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-560m',
-    # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-560m/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-560m',
-
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
-    # 'config_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
-
-    'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',
-    'config_name': '/data/nlp/pre_models/torch/opt/opt-350m/config.json',
-    'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-350m',
-
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
-    # 'config_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf/config.json',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/llama/llama-7b-hf',
+    # 预训练模型配置
+    **train_model_config,
 
     'convert_onnx': False, # 转换onnx模型
     'do_train': True,
@@ -122,14 +97,10 @@ train_info_args = {
     'max_target_length': 100,  # 预测最大长度
     'use_fast_tokenizer': False,
 
+    'ilql': {**ilql_info_args},
 
 }
 
 
 
-#配置检查
-
-
-if global_args['load_in_8bit'] == global_args['load_in_4bit'] and global_args['load_in_8bit'] == True:
-    raise Exception('load_in_8bit and load_in_4bit only set one at same time!')
 

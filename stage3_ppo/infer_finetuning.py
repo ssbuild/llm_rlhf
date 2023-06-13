@@ -27,15 +27,14 @@ if __name__ == '__main__':
 
     pl_model = MyPPOTransformer(config=config, model_args=model_args)
     if deep_config is None:
-        train_weight = './best_ckpt/best.pt'
+        train_weight = './best_ckpt/last.ckpt'
     else:
         # 建议直接使用转换脚本命令 支持 deepspeed stage 0,1,2,3， 生成 ./best_ckpt/last.ckpt/best.pt 权重文件
         # cd best_ckpt/last.ckpt
         # python zero_to_fp32.py . best.pt
-        train_weight = './best_ckpt/last.ckpt/best.pt'
+        train_weight = './best_ckpt/last/best.pt'
 
     pl_model.load_sft_weight(train_weight)
-
 
     pl_model.eval().half().cuda()
 
