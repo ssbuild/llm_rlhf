@@ -15,7 +15,8 @@
 ## install
     llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
     python >= 3.10
-  - pip install -i https://pypi.org/simple -U -r requirements.txt
+  - pip install -U -r requirements.txt
+  - 如果无法安装，可以切换官方源 pip install -i https://pypi.org/simple -U -r requirements.txt
 
 
 
