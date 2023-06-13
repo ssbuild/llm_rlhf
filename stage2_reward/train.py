@@ -28,7 +28,6 @@ if __name__ == '__main__':
         config_kwargs[global_args["num_layers_key"]] = global_args["num_layers"]
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
     dataHelper.preprocess_tokenizer_config()
-    config.save_pretrained(output_weight_dir)
 
     # 缓存数据集
     if data_args.do_train:
@@ -74,7 +73,12 @@ if __name__ == '__main__':
                                    quantization_config=global_args["quantization_config"],
                                    load_in_8bit=global_args["load_in_8bit"],
                                    device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
-                                   torch_dtype=torch.float16, )
+                                   torch_dtype=torch.float16,
+                                   new_num_tokens=len(tokenizer),  # 可能扩充词
+                                   )
+
+    config.save_pretrained(output_weight_dir)
+
     # 如果自定义训练了sft_weight , 可以再次加载sft_weight
     # pl_model.load_sft_weight('sft_weight.bin',is_trainable=True)
 
