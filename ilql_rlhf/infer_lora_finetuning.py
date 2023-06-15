@@ -27,17 +27,21 @@ if __name__ == '__main__':
     lora_args = LoraArguments.from_pretrained(ckpt_dir)
     assert lora_args.inference_mode == True
 
+    new_num_tokens = config.vocab_size
+    if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
+        config.vocab_size = config.task_specific_params['vocab_size']
+
     pl_model = MyILQLTransformer(config=config, model_args=model_args, lora_args=lora_args,ilql_args=ilql_args,
+                                 torch_dtype=config.torch_dtype,
+                                 new_num_tokens=new_num_tokens,
                                  # load_in_8bit=global_args["load_in_8bit"],
                                  # # device_map="auto",
                                  # device_map={"":0},
                                  )
     # 加载sft权重
     pl_model.load_sft_weight(ckpt_dir)
-    if getattr(pl_model.get_llm_model(), "is_loaded_in_8bit", False):
-        pl_model.eval().cuda()
-    else:
-        pl_model.eval().half().cuda()
+
+    pl_model.eval().half().cuda()
 
     enable_merge_weight = False
 
