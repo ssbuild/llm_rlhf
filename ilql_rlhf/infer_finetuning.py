@@ -11,7 +11,7 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyILQLTransformer, Generate,LoraArguments,ILQLArguments
+from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer, Generate,LoraArguments,ILQLArguments
 from config.ilql_config import get_deepspeed_config
 
 deep_config = get_deepspeed_config()

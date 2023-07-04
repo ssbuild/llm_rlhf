@@ -6,9 +6,8 @@ import numpy as np
 import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
-
 from data_utils import train_info_args, NN_DataHelper,global_args
-from models import MyRRHFTransformer,LoraArguments
+from aigc_zoo.model_zoo.llm.rrhf_model import MyRRHFTransformer,LoraArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None

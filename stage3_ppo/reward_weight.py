@@ -3,10 +3,10 @@
 # @Author: tk
 
 from config import reward_config
-from models.reward_model import *
-from models.ppo_model import *
-from models.ilql_model import *
-from models.rrhf_model import *
+from aigc_zoo.model_zoo.llm.reward_model import *
+from aigc_zoo.model_zoo.llm.ppo_model import *
+
+
 
 
 def load_reward_model(sft_model_dir,sft_weight_path=None) ->MyRewardTransformer:

@@ -9,7 +9,7 @@ from deep_training.trainer.pl.modelcheckpoint import FabricModelCheckpoint
 from transformers import HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from models import MyILQLTransformer, LoraArguments, LoraConfig, ILQLArguments, ILQLConfig
+from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer, LoraArguments, LoraConfig, ILQLArguments, ILQLConfig
 from deep_training.nlp.rl.ilql.ilql_trainer import ILQLTrainer
 from lightning.fabric.strategies import DeepSpeedStrategy
 
@@ -30,13 +30,7 @@ if __name__ == '__main__':
     dataHelper.preprocess_tokenizer_config()
 
 
-    # 缓存数据集
-    if data_args.do_train:
-        dataHelper.make_dataset_with_args(data_args.train_file, mixed_data=False, shuffle=True, mode='train')
-    if data_args.do_eval:
-        dataHelper.make_dataset_with_args(data_args.eval_file, mode='eval')
-    if data_args.do_test:
-        dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
+    dataHelper.make_dataset_all()
 
     deepspeed_config = get_deepspeed_config()
     strategy = 'ddp' if torch.cuda.device_count() > 1 else 'auto'

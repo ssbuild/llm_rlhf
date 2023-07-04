@@ -7,7 +7,8 @@ from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig
 
 from data_utils import train_info_args, NN_DataHelper
-from models import MyPPOTransformer, Generate
+from aigc_zoo.model_zoo.llm.ppo_model import MyPPOTransformer
+from aigc_zoo.utils.llm_generate import Generate
 from config.ppo_config import get_deepspeed_config
 
 

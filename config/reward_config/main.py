@@ -8,27 +8,25 @@ import os
 
 # 模块配置， 默认启用lora
 enable_deepspeed = False
+enable_ptv2 = False
 enable_lora = True
-enable_int8 = False # qlora int8
-enable_int4 = False # qlora int4
+load_in_bit = 0  # 4 load_in_4bit, 8 load_in_8bit  other  0
 
 
 if enable_lora:
     from config.reward_config.reward_config_lora import *
+elif enable_ptv2:
+    raise NotImplemented
 else:
     from config.reward_config.reward_config import *
 
 
 if enable_lora:
-    if enable_int4:
-        global_args['load_in_4bit'] = True
-        global_args['load_in_8bit'] = False
+    enable_ptv2 = False
+    global_args['load_in_4bit'] = load_in_bit == 4
+    global_args['load_in_8bit'] = load_in_bit == 8
 
-    if enable_int8:
-        global_args['load_in_4bit'] = False
-        global_args['load_in_8bit'] = True
-
-    if not enable_int4:
+    if global_args['load_in_4bit']:
         global_args['quantization_config'] = None
 
     #检查lora adalora是否开启

@@ -8,7 +8,8 @@ from deep_training.data_helper import ModelArguments, DataArguments
 from tqdm import tqdm
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 from data_utils import train_info_args, NN_DataHelper
-from models import MyRRHFTransformer,MyRewardTransformer
+from aigc_zoo.model_zoo.llm.rrhf_model import MyRRHFTransformer
+from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer
 from stage3_rrhf.data_processer import tokenizer_one
 
 if __name__ == '__main__':

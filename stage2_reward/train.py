@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, global_args, get_deepspeed_config
-from models import MyRewardTransformer
+from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer
 
 
 if __name__ == '__main__':
@@ -29,13 +29,7 @@ if __name__ == '__main__':
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
     dataHelper.preprocess_tokenizer_config()
 
-    # 缓存数据集
-    if data_args.do_train:
-        dataHelper.make_dataset_with_args(data_args.train_file, mixed_data=False, shuffle=True, mode='train')
-    if data_args.do_eval:
-        dataHelper.make_dataset_with_args(data_args.eval_file, mode='eval')
-    if data_args.do_test:
-        dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
+    dataHelper.make_dataset_all()
 
     deepspeed_config = get_deepspeed_config()
     strategy = 'ddp' if torch.cuda.device_count() > 1 else 'auto'

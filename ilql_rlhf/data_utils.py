@@ -15,8 +15,9 @@ import torch
 from deep_training.data_helper import DataHelper, ModelArguments, TrainingArguments, DataArguments
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
-from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-from models import LoraArguments,LoraConfig,ILQLArguments,ILQLConfig
+from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds, \
+    DEFAULT_PAD_TOKEN
+from aigc_zoo.model_zoo.llm.ilql_model import LoraArguments,LoraConfig,ILQLArguments,ILQLConfig
 from config.ilql_config import *
 
 
@@ -116,6 +117,27 @@ class NN_DataHelper(DataHelper):
         return o
 
 
+    def make_dataset_all(self):
+        data_args = self.data_args
+
+        # schema for arrow parquet
+        schema = {
+            "input_ids": "int32",
+            "attention_mask": "int32",
+            "rewards": "float",
+            "actions_ixs": "int64",
+            "states_ixs": "int64",
+            "dones": "int32",
+        }
+        # 缓存数据集
+        if data_args.do_train:
+            self.make_dataset_with_args(data_args.train_file, mixed_data=False, shuffle=True, mode='train',
+                                        schema=schema)
+        if data_args.do_eval:
+            self.make_dataset_with_args(data_args.eval_file, mode='eval', schema=schema)
+        if data_args.do_test:
+            self.make_dataset_with_args(data_args.test_file, mode='test', schema=schema)
+
 
 
 if __name__ == '__main__':
@@ -126,27 +148,12 @@ if __name__ == '__main__':
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args,ilql_args=ilql_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
-    config.decoder_start_token_id = config.bos_token_id
-
-
-    if "llama" in model_args.model_name_or_path.lower() and tokenizer.bos_token_id != DEFAULT_BOS_TOKEN:
-        tokenizer.add_special_tokens({
-            "eos_token": DEFAULT_EOS_TOKEN,
-            "bos_token": DEFAULT_BOS_TOKEN,
-            "unk_token": DEFAULT_UNK_TOKEN,
-        })
-        if tokenizer.pad_token_id is None or tokenizer.pad_token_id == -1:
-            tokenizer.pad_token_id = tokenizer.eos_token_id
+    dataHelper.preprocess_tokenizer_config()
 
 
     # 缓存数据集
     # 检测是否存在 output/dataset_0-train.record ，不存在则制作数据集
-    if data_args.do_train:
-        dataHelper.make_dataset_with_args(data_args.train_file,mixed_data=False,shuffle=True,mode='train')
-    if data_args.do_eval:
-        dataHelper.make_dataset_with_args(data_args.eval_file, shuffle=False,mode='eval')
-    if data_args.do_test:
-        dataHelper.make_dataset_with_args(data_args.test_file, shuffle=False,mode='test')
+    dataHelper.make_dataset_all()
 
 
     # def shuffle_records(record_filenames, outfile, compression_type='GZIP'):
