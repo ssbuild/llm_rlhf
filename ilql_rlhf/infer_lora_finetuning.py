@@ -8,9 +8,9 @@ import os
 import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
-
 from data_utils import train_info_args, NN_DataHelper
-from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer, Generate,LoraArguments,ILQLArguments
+from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer,LoraArguments,ILQLArguments
+from aigc_zoo.utils.llm_generate import Generate
 from config.ilql_config import global_args
 
 if __name__ == '__main__':
