@@ -24,7 +24,14 @@ if __name__ == '__main__':
     ckpt_dir = './stage2_reward/best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
 
-    pl_model = MyRewardTransformer(config=config, model_args=model_args)
+    new_num_tokens = config.vocab_size
+    if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
+        config.vocab_size = config.task_specific_params['vocab_size']
+    pl_model = MyRewardTransformer(config=config,
+                                   model_args=model_args,
+                                   torch_dtype=config.torch_dtype,
+                                   new_num_tokens=new_num_tokens,
+                                   )
     # 加载权重
     pl_model.load_sft_weight(ckpt_dir)
 

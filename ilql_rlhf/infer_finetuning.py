@@ -30,7 +30,15 @@ if __name__ == '__main__':
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
 
-    pl_model = MyILQLTransformer(config=config, model_args=model_args, ilql_args=ilql_args)
+    new_num_tokens = config.vocab_size
+    if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
+        config.vocab_size = config.task_specific_params['vocab_size']
+    pl_model = MyILQLTransformer(config=config,
+                                 model_args=model_args,
+                                 ilql_args=ilql_args,
+                                 torch_dtype=config.torch_dtype,
+                                 new_num_tokens=new_num_tokens,
+                                 )
 
     if deep_config is None:
         train_weight = './best_ckpt/best.pt'
