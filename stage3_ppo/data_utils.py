@@ -33,7 +33,12 @@ class NN_DataHelper(DataHelper):
     def __init__(self, *args, **kwargs):
         super(NN_DataHelper, self).__init__(*args, **kwargs)
 
-    def preprocess_tokenizer_config(self):
+    def load_tokenizer_and_config(self,*args,**kwargs):
+        ret = super().load_tokenizer_and_config(*args,**kwargs)
+        self._preprocess_tokenizer_config()
+        return ret
+
+    def _preprocess_tokenizer_config(self):
         model_args = self.model_args
         tokenizer = self.tokenizer
         config = self.config
@@ -138,7 +143,7 @@ if __name__ == '__main__':
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
-    dataHelper.preprocess_tokenizer_config()
+    
 
 
     # 缓存数据集

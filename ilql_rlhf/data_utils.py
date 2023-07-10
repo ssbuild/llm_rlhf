@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/4/20 17:08
-
 import sys
 sys.path.append('..')
 
@@ -35,7 +34,11 @@ class NN_DataHelper(DataHelper):
     def __init__(self, *args, **kwargs):
         super(NN_DataHelper, self).__init__(*args, **kwargs)
 
-    def preprocess_tokenizer_config(self):
+    def load_tokenizer_and_config(self,*args,**kwargs):
+        ret = super().load_tokenizer_and_config(*args,**kwargs)
+        self._preprocess_tokenizer_config()
+        return ret
+    def _preprocess_tokenizer_config(self):
         model_args = self.model_args
         tokenizer = self.tokenizer
         config = self.config
@@ -55,6 +58,8 @@ class NN_DataHelper(DataHelper):
         if config.decoder_start_token_id is None:
             config.decoder_start_token_id = config.bos_token_id
         assert config.decoder_start_token_id == config.bos_token_id
+
+
 
     def on_get_labels(self, files: typing.List[str]):
         D = ['score']
@@ -148,8 +153,6 @@ if __name__ == '__main__':
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args,ilql_args=ilql_args)
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
-    dataHelper.preprocess_tokenizer_config()
-
 
     # 缓存数据集
     # 检测是否存在 output/dataset_0-train.record ，不存在则制作数据集

@@ -27,6 +27,7 @@ if __name__ == '__main__':
     dataHelper = NN_DataHelper(model_args, None, data_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
+
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
 

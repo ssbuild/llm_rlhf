@@ -27,7 +27,7 @@ if __name__ == '__main__':
     if global_args["num_layers"] > 0:
         config_kwargs[global_args["num_layers_key"]] = global_args["num_layers"]
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
-    dataHelper.preprocess_tokenizer_config()
+    
 
 
     dataHelper.make_dataset_all()
