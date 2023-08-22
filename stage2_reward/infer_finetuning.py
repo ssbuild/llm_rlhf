@@ -15,11 +15,11 @@ deep_config = get_deepspeed_config()
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, DataArguments))
-    model_args,data_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
+    parser = HfArgumentParser((ModelArguments, ))
+    (model_args, ) = parser.parse_dict(train_info_args,allow_extra_keys=True)
 
     tokenizer : PreTrainedTokenizer
-    dataHelper = NN_DataHelper(model_args, None, data_args)
+    dataHelper = NN_DataHelper(model_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
     ckpt_dir = './best_ckpt'
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     input_list = [_[:256] for _ in input_list]
     tokend = tokenizer(input_list, padding=True, truncation=True, max_length=512)
     input_ids = torch.tensor(tokend["input_ids"],dtype=torch.int32).to(pl_model.device)
-    output = pl_model.backbone.compute_loss(input_ids=input_ids)
+    output = pl_model.backbone.model.compute_loss(input_ids=input_ids)
     _,scores = output
 
     for text,score in zip(input_list,scores):

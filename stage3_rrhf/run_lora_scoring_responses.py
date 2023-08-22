@@ -8,22 +8,22 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from tqdm import tqdm
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 from data_utils import train_info_args, NN_DataHelper,global_args
-from aigc_zoo.model_zoo.llm.rrhf_model import MyRRHFTransformer,LoraArguments
+from aigc_zoo.model_zoo.llm.rrhf_model import MyRRHFTransformer,EffiArguments
 from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer
 from data_processer import tokenizer_one
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, DataArguments))
-    model_args, data_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
+    parser = HfArgumentParser((ModelArguments, ))
+    (model_args, ) = parser.parse_dict(train_info_args,allow_extra_keys=True)
 
     tokenizer : PreTrainedTokenizer
-    dataHelper = NN_DataHelper(model_args, None, data_args)
+    dataHelper = NN_DataHelper(model_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
     ckpt_dir = './stage2_reward/best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    lora_args = LoraArguments.from_pretrained(ckpt_dir)
+    lora_args = EffiArguments.from_pretrained(ckpt_dir)
 
     assert lora_args.inference_mode == True
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     pl_model = MyRewardTransformer(config=config, model_args=model_args, lora_args=lora_args,
                                    torch_dtype=config.torch_dtype,
                                    new_num_tokens=new_num_tokens,
-                                   # load_in_8bit=global_args["load_in_8bit"],
+                                   
                                    # # device_map="auto",
                                    # device_map={"": 0},
                                    )
@@ -62,7 +62,7 @@ if __name__ == '__main__':
             ]
             tokend = tokenizer(input_list, padding=True, truncation=True)
             input_ids = torch.tensor(tokend["input_ids"], dtype=torch.int32).to(pl_model.device)
-            output = pl_model.backbone.compute_loss(input_ids=input_ids)
+            output = pl_model.backbone.model.compute_loss(input_ids=input_ids)
             _, scores = output
 
             D.append({

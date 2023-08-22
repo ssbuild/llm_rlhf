@@ -7,8 +7,7 @@ from config.constant_map import train_info_models
 train_model_config = train_info_models['opt-350m']
 
 global_args = {
-    "load_in_8bit": False,
-    "load_in_4bit": False,
+
 
     #load_in_4bit 量化配置
     "quantization_config": None,
