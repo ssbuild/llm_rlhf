@@ -33,7 +33,7 @@ if __name__ == '__main__':
     pl_model = MyRewardTransformer(config=config, model_args=model_args, lora_args=lora_args,
                                    torch_dtype=config.torch_dtype,
                                    new_num_tokens=new_num_tokens,
-                                   # load_in_8bit=global_args["load_in_8bit"],
+                                   
                                    # # device_map="auto",
                                    # device_map={"": 0},
                                    )

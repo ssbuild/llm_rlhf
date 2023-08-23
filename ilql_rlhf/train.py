@@ -46,7 +46,15 @@ if __name__ == '__main__':
         training_args=training_args,
         lora_args=lora_args, )
 
+    is_bf16_supported = torch.cuda.is_bf16_supported()
+    # 精度 根据实际情况做调整
+    if is_bf16_supported:
+        precision = 'bf16'
+    else:
+        precision = '16'
 
+    if global_args["quantization_config"] is not None and global_args["quantization_config"].load_in_8bit:
+        precision = "32"
     trainer = ILQLTrainer(
         callbacks=[ checkpoint_callback],
         max_epochs=training_args.max_epochs,
@@ -57,13 +65,13 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         #max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
-        precision='32',# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
+        precision=precision,# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
 
     pl_model = MyILQLTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ilql_args=ilql_args,
                                  quantization_config=global_args["quantization_config"],
-                                 load_in_8bit=global_args["load_in_8bit"],
+
                                  device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
                                  torch_dtype=torch.float16,
                                  new_num_tokens=len(tokenizer),  # 可能扩充词
