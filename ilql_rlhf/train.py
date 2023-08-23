@@ -9,13 +9,13 @@ from deep_training.trainer.pl.modelcheckpoint import FabricModelCheckpoint
 from transformers import HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_UNK_TOKEN, DEFAULT_BOS_TOKEN
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer, EffiArguments, LoraConfig, ILQLArguments, ILQLConfig
+from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer, PetlArguments, LoraConfig, ILQLArguments, ILQLConfig
 from deep_training.nlp.rl.ilql.ilql_trainer import ILQLTrainer
 from lightning.fabric.strategies import DeepSpeedStrategy
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, EffiArguments, ILQLArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments, ILQLArguments))
     model_args, training_args, data_args, lora_args, ilql_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
     ilql_args = ilql_args.config
@@ -46,15 +46,6 @@ if __name__ == '__main__':
         training_args=training_args,
         lora_args=lora_args, )
 
-    is_bf16_supported = torch.cuda.is_bf16_supported()
-    # 精度 根据实际情况做调整
-    if is_bf16_supported:
-        precision = 'bf16'
-    else:
-        precision = '16'
-
-    if global_args["quantization_config"] is not None and global_args["quantization_config"].load_in_8bit:
-        precision = "32"
 
     trainer = ILQLTrainer(
         callbacks=[ checkpoint_callback],
@@ -66,13 +57,13 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         #max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
-        precision=precision,# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
+        precision='32',# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
 
     pl_model = MyILQLTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ilql_args=ilql_args,
                                  quantization_config=global_args["quantization_config"],
-                                 
+                                 load_in_8bit=global_args["load_in_8bit"],
                                  device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
                                  torch_dtype=torch.float16,
                                  new_num_tokens=len(tokenizer),  # 可能扩充词

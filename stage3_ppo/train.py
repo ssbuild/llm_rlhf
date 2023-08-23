@@ -8,7 +8,7 @@ from deep_training.data_helper import ModelArguments, DataArguments, TrainingArg
 from deep_training.trainer.pl.modelcheckpoint import FabricModelCheckpoint
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from aigc_zoo.model_zoo.llm.ppo_model import MyPPOTransformer, EffiArguments, LoraConfig, PPOArguments, PPOConfig
+from aigc_zoo.model_zoo.llm.ppo_model import MyPPOTransformer, PetlArguments, LoraConfig, PPOArguments, PPOConfig
 from reward_weight import load_reward_model, load_ref_model
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
 from lightning.fabric.strategies import DeepSpeedStrategy
@@ -18,7 +18,7 @@ from lightning.fabric.strategies import DeepSpeedStrategy
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, EffiArguments, PPOArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments, PPOArguments))
     model_args, training_args, data_args, lora_args, ppo_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
     ppo_args = ppo_args.config
@@ -52,15 +52,6 @@ if __name__ == '__main__':
         training_args=training_args,
         lora_args=lora_args, )
 
-    is_bf16_supported = torch.cuda.is_bf16_supported()
-    # 精度 根据实际情况做调整
-    if is_bf16_supported:
-        precision = 'bf16'
-    else:
-        precision = '16'
-
-    if global_args["quantization_config"] is not None and global_args["quantization_config"].load_in_8bit:
-        precision = "32"
 
     trainer = PPOTrainer(
         callbacks=[ checkpoint_callback],
@@ -72,7 +63,7 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         #max_grad_norm=training_args.max_grad_norm,
         strategy=strategy,
-        precision=precision,# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
+        precision='16',# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
 
@@ -130,7 +121,7 @@ if __name__ == '__main__':
 
     pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
                                 quantization_config=global_args["quantization_config"],
-                                
+                                load_in_8bit=global_args["load_in_8bit"],
                                 device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
                                 torch_dtype=torch.float16,
                                 new_num_tokens=len(tokenizer),  # 可能扩充词

@@ -16,12 +16,12 @@ def load_reward_model(sft_model_dir,sft_weight_path=None) ->MyRewardTransformer:
                      如果是普通 或者 p-tuning-v2 则是权重文件
     '''
 
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, EffiArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
     lora_args = lora_args.config
     config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重
-    lora_args = EffiArguments.from_pretrained(sft_model_dir) if lora_args else None
+    lora_args = PetlArguments.from_pretrained(sft_model_dir) if lora_args else None
     new_num_tokens = config.vocab_size
     if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
         config.vocab_size = config.task_specific_params['vocab_size']
@@ -49,12 +49,12 @@ def load_ref_model(ref_train_info_args,sft_model_dir,sft_weight_path=None) ->MyP
         weight_path: 如果是lora 则是lora 权重路径 （）
                      如果是普通 或者 p-tuning-v2 则是权重文件
     '''
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, EffiArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(ref_train_info_args)
     lora_args = lora_args.config
     config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重
-    lora_args = EffiArguments.from_pretrained(sft_model_dir) if lora_args else None
+    lora_args = PetlArguments.from_pretrained(sft_model_dir) if lora_args else None
     new_num_tokens = config.vocab_size
     if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
         config.vocab_size = config.task_specific_params['vocab_size']

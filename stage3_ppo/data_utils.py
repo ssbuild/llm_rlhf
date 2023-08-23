@@ -15,7 +15,7 @@ from deep_training.data_helper import DataHelper, ModelArguments, TrainingArgume
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-from aigc_zoo.model_zoo.llm.ppo_model import EffiArguments,LoraConfig,PPOArguments,PPOConfig
+from aigc_zoo.model_zoo.llm.ppo_model import PetlArguments,LoraConfig,PPOArguments,PPOConfig
 from config.ppo_config import *
 
 
@@ -136,7 +136,7 @@ class NN_DataHelper(DataHelper):
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, EffiArguments,PPOArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments,PPOArguments))
     model_args, training_args, data_args, lora_args,ppo_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
     ppo_args = ppo_args.config
