@@ -142,6 +142,7 @@ if __name__ == '__main__':
     # pl_model.load_sft_weight('sft_weight.bin',is_trainable=True)
     
     pl_model = pl_model.float() if not is_bf16_supported else pl_model.bfloat16()
+ 
 
     # pl_ref_model = load_ref_model('../reward/best_ckpt')
     pl_ref_model = copy.deepcopy(pl_model)
