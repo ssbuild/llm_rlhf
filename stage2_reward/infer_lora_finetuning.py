@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
-from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer,LoraArguments
+from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer,PetlArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    lora_args = LoraArguments.from_pretrained(ckpt_dir)
+    lora_args = PetlArguments.from_pretrained(ckpt_dir)
 
     assert lora_args.inference_mode == True
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     pl_model = MyRewardTransformer(config=config, model_args=model_args, lora_args=lora_args,
                                    torch_dtype=config.torch_dtype,
                                    new_num_tokens=new_num_tokens,
-                                   # load_in_8bit=global_args["load_in_8bit"],
+                                   
                                    # # device_map="auto",
                                    # device_map={"": 0},
                                    )

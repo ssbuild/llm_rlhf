@@ -10,7 +10,7 @@ from tqdm import tqdm
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper,get_deepspeed_config
-from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer,LoraArguments
+from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer,PetlArguments
 
 deepspeed_config = get_deepspeed_config()
 

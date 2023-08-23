@@ -9,7 +9,7 @@ import torch
 from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 from data_utils import train_info_args, NN_DataHelper
-from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer,LoraArguments,ILQLArguments
+from aigc_zoo.model_zoo.llm.ilql_model import MyILQLTransformer,PetlArguments,ILQLArguments
 from aigc_zoo.utils.llm_generate import Generate
 from config.ilql_config import global_args
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    lora_args = LoraArguments.from_pretrained(ckpt_dir)
+    lora_args = PetlArguments.from_pretrained(ckpt_dir)
     assert lora_args.inference_mode == True
 
     new_num_tokens = config.vocab_size
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     pl_model = MyILQLTransformer(config=config, model_args=model_args, lora_args=lora_args,ilql_args=ilql_args,
                                  torch_dtype=config.torch_dtype,
                                  new_num_tokens=new_num_tokens,
-                                 # load_in_8bit=global_args["load_in_8bit"],
+                                 
                                  # # device_map="auto",
                                  # device_map={"":0},
                                  )

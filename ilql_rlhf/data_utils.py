@@ -16,7 +16,7 @@ from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gf
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds, \
     DEFAULT_PAD_TOKEN
-from aigc_zoo.model_zoo.llm.ilql_model import LoraArguments,LoraConfig,ILQLArguments,ILQLConfig
+from aigc_zoo.model_zoo.llm.ilql_model import PetlArguments,LoraConfig,ILQLArguments,ILQLConfig
 from config.ilql_config import *
 
 
@@ -146,7 +146,7 @@ class NN_DataHelper(DataHelper):
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,ILQLArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments,ILQLArguments))
     model_args, training_args, data_args, lora_args,ilql_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
     ilql_args = ilql_args.config

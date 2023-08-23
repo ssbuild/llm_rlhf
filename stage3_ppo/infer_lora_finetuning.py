@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig
 
 from data_utils import train_info_args, NN_DataHelper
-from aigc_zoo.model_zoo.llm.ppo_model import MyPPOTransformer,LoraArguments
+from aigc_zoo.model_zoo.llm.ppo_model import MyPPOTransformer,PetlArguments
 from aigc_zoo.utils.llm_generate import Generate
 
 if __name__ == '__main__':
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    lora_args = LoraArguments.from_pretrained(ckpt_dir)
+    lora_args = PetlArguments.from_pretrained(ckpt_dir)
 
     assert lora_args.inference_mode == True
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     pl_model = MyPPOTransformer(config=config, model_args=model_args, lora_args=lora_args,
                                 torch_dtype=config.torch_dtype,
                                 new_num_tokens=new_num_tokens,
-                                # load_in_8bit=global_args["load_in_8bit"],
+                                
                                 # # device_map="auto",
                                 # device_map={"": 0},
                                 )
