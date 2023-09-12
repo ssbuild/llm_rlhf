@@ -127,14 +127,17 @@ if __name__ == '__main__':
     else:
         reward_fn = None
 
+    transformer_args = dict(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
+                            quantization_config=global_args["quantization_config"],
+                            device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
+                            torch_dtype=torch.float16,
+                            new_num_tokens=len(tokenizer),  # 可能扩充词
+                            )
+    # 移除device_map
+    if global_args["quantization_config"] is None:
+        transformer_args.pop("device_map")
 
-    pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
-                                quantization_config=global_args["quantization_config"],
-                                
-                                device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
-                                torch_dtype=torch.float16,
-                                new_num_tokens=len(tokenizer),  # 可能扩充词
-                                )
+    pl_model = MyPPOTransformer(**transformer_args)
 
     config.save_pretrained(output_weight_dir)
 
