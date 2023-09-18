@@ -15,11 +15,11 @@ load_in_bit = 0  # 4 load_in_4bit, 8 load_in_8bit  other  0
 
 
 if enable_lora:
-    from config.reward_config.reward_config_lora import *
+    from config.rlhf_stage2_reward_config.reward_config_lora import *
 elif enable_ptv2:
     raise NotImplemented
 else:
-    from config.reward_config.reward_config import *
+    from config.rlhf_stage2_reward_config.reward_config import *
 
 if global_args['quantization_config'] is not None:
     global_args['quantization_config'].load_in_4bit = load_in_bit == 4

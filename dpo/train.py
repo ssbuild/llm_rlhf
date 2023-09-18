@@ -1,8 +1,6 @@
 # @Time    : 2023/4/19 23:03
 # @Author  : tk
 # @FileName: train.py
-import logging
-
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
 from deep_training.trainer.pl.modelcheckpoint import ModelCheckpointEx
@@ -11,7 +9,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, global_args, get_deepspeed_config
-from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer,PetlArguments, LoraConfig
+from aigc_zoo.model_zoo.llm.dpo_model import MyTransformerDPO,PetlArguments, LoraConfig
 
 
 if __name__ == '__main__':
@@ -79,7 +77,7 @@ if __name__ == '__main__':
         transformer_args.pop("device_map")
 
 
-    pl_model = MyRewardTransformer(**transformer_args)
+    pl_model = MyTransformerDPO(**transformer_args)
 
     config.save_pretrained(output_weight_dir)
 

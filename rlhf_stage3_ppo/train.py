@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     if trainer.global_rank == 0:
         # 加载lora
-        pl_reward_model = load_reward_model('../stage2_reward/best_ckpt/last')
+        pl_reward_model = load_reward_model('../rlhf_stage2_reward/best_ckpt/last')
 
         #加载微调权重
         #pl_reward_model = load_reward_model('../stage2_reward/best_ckpt','../stage2_reward/best_ckpt/last.ckpt')

@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2023/4/20 17:08
-
+# @Time    : 2023/4/19 23:02
+# @Author  : tk
+# @FileName: data_utils
 import sys
 sys.path.append('..')
 
@@ -12,13 +12,12 @@ import typing
 import numpy as np
 import torch
 from deep_training.data_helper import DataHelper, ModelArguments, TrainingArguments, DataArguments
+from aigc_zoo.model_zoo.llm.reward_model import PetlArguments,LoraConfig
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
-from transformers import PreTrainedTokenizer, HfArgumentParser
+from transformers import PreTrainedTokenizer, HfArgumentParser, PretrainedConfig
 from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-from aigc_zoo.model_zoo.llm.ppo_model import PetlArguments,LoraConfig,PPOArguments,PPOConfig
-from config.ppo_config import *
-
-
+from config.rlhf_stage2_reward_config import *
+from torch.nn import functional as F
 
 def preprocess(text):
   return text
@@ -33,11 +32,10 @@ class NN_DataHelper(DataHelper):
     def __init__(self, *args, **kwargs):
         super(NN_DataHelper, self).__init__(*args, **kwargs)
 
-    def load_tokenizer_and_config(self,*args,**kwargs):
-        ret = super().load_tokenizer_and_config(*args,**kwargs)
+    def load_tokenizer_and_config(self, *args, **kwargs):
+        ret = super().load_tokenizer_and_config(*args, **kwargs)
         self._preprocess_tokenizer_config()
         return ret
-
     def _preprocess_tokenizer_config(self):
         model_args = self.model_args
         tokenizer = self.tokenizer
@@ -59,6 +57,8 @@ class NN_DataHelper(DataHelper):
             config.decoder_start_token_id = config.bos_token_id
         assert config.decoder_start_token_id == config.bos_token_id
 
+
+
     def on_get_labels(self, files: typing.List[str]):
         D = ['score']
         label2id = {label: i for i, label in enumerate(D)}
@@ -76,47 +76,48 @@ class NN_DataHelper(DataHelper):
         tokenizer: PreTrainedTokenizer
         config = self.config
         max_seq_length = self.max_seq_length_dict[mode]
-
-        ppo_args:PPOConfig = self.external_kwargs['ppo_args']
-        max_new_tokens = ppo_args.gen_kwargs['max_new_tokens']
         tokenizer = self.tokenizer
 
         pair_data = data
-        d = TokenIds.process(pair_data,tokenizer,max_seq_length,max_new_tokens)
+        d = TokenIds.process(pair_data,tokenizer,max_seq_length)
         if self.index < 3:
             print(d)
         return d
 
     # 读取文件
     def on_get_corpus(self, files: typing.List, mode: str):
+        tokenizer = self.tokenizer
         D = []
         for file in files:
             with open(file, mode='r', encoding='utf-8', newline='\n') as f:
                 lines = f.readlines()
-            d = CorpusPreprocess.process(lines)
+            d = CorpusPreprocess.process(tokenizer,lines)
             D.extend(d)
         return D
 
     def collate_fn(self, batch):
-        merge_keys = ['input_ids','attention_mask']
-        batch = copy.copy(batch)
-        o = {
-            k: []
-            for k in batch[0].keys()
-        }
+        o = {k: [] for k in batch[0].keys()}
         for i, b in enumerate(batch):
             for k in b:
-                o[k].append(copy.deepcopy(b[k]))
+                o[k].append(torch.tensor(b[k]))
+        seqlen = np.max([len(_) for _ in o['input_ids']])
+        flag = False
+        if 'input_ids2' in o:
+            flag = True
+            seqlen = np.max([seqlen] + [len(_) for _ in o['input_ids2']])
 
-        o_pad = {
-            k: o[k] for k in merge_keys
-        }
         tokenizer: PreTrainedTokenizer = self.tokenizer
-        o_pad = tokenizer.pad(o_pad,
-                              # max_length=self.data_args.train_max_seq_length,
-                              return_tensors="pt")
-        for k in o_pad:
-            o[k] = o_pad[k]
+        pad_val = tokenizer.pad_token_id
+
+        o['input_ids'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in o['input_ids']])
+        o['attention_mask'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=0) for _ in
+                               o['attention_mask']])
+
+        if flag:
+            o['input_ids2'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in o['input_ids2']])
+            o['attention_mask2'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=0) for _ in
+                                    o['attention_mask2']])
+
         return o
 
 
@@ -135,18 +136,17 @@ class NN_DataHelper(DataHelper):
             self.make_dataset_with_args(data_args.test_file, mode='test', schema=schema)
 
 
+
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments,PPOArguments))
-    model_args, training_args, data_args, lora_args,ppo_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
+    model_args, training_args, data_args, lora_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
-    ppo_args = ppo_args.config
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
-    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
-    
-
+    dataHelper = NN_DataHelper(model_args, training_args, data_args)
+    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs={"torch_dtype": torch.float16})
 
     # 缓存数据集
+    # 检测是否存在 output/dataset_0-train.record ，不存在则制作数据集
     dataHelper.make_dataset_all()
 
 

@@ -2,7 +2,7 @@
 # @Time:  11:30
 # @Author: tk
 
-from config import reward_config
+from config import rlhf_stage2_reward_config
 from aigc_zoo.model_zoo.llm.reward_model import *
 from aigc_zoo.model_zoo.llm.ppo_model import *
 
@@ -17,7 +17,7 @@ def load_reward_model(sft_model_dir,sft_weight_path=None) ->MyRewardTransformer:
     '''
 
     parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
-    model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
+    model_args, training_args, data_args, lora_args = parser.parse_dict(rlhf_stage2_reward_config.train_info_args)
     lora_args = lora_args.config
     config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重

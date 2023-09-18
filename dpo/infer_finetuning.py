@@ -2,14 +2,13 @@
 # @Time    : 2023/5/17 11:36
 import sys
 sys.path.append('..')
-from config.reward_config import get_deepspeed_config
+from config.rlhf_stage2_reward_config import get_deepspeed_config
 
 import torch
-from deep_training.data_helper import ModelArguments, DataArguments
+from deep_training.data_helper import ModelArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
-
 from data_utils import train_info_args, NN_DataHelper
-from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer
+from aigc_zoo.model_zoo.llm.dpo_model import MyTransformerDPO
 
 deep_config = get_deepspeed_config()
 
@@ -24,7 +23,7 @@ if __name__ == '__main__':
 
     ckpt_dir = './best_ckpt'
     config = AutoConfig.from_pretrained(ckpt_dir)
-    pl_model = MyRewardTransformer(config=config, model_args=model_args)
+    pl_model = MyTransformerDPO(config=config, model_args=model_args)
     if deep_config is None:
         train_weight = './best_ckpt/best.pt'
     else:
