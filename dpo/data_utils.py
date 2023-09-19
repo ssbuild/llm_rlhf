@@ -101,23 +101,14 @@ class NN_DataHelper(DataHelper):
             for k in b:
                 o[k].append(torch.tensor(b[k]))
         seqlen = np.max([len(_) for _ in o['input_ids']])
-        flag = False
         if 'input_ids2' in o:
-            flag = True
             seqlen = np.max([seqlen] + [len(_) for _ in o['input_ids2']])
 
         tokenizer: PreTrainedTokenizer = self.tokenizer
-        pad_val = tokenizer.pad_token_id
-
-        o['input_ids'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in o['input_ids']])
-        o['attention_mask'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=0) for _ in
-                               o['attention_mask']])
-
-        if flag:
-            o['input_ids2'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in o['input_ids2']])
-            o['attention_mask2'] = torch.stack([F.pad(_, (0, seqlen - len(_)), mode='constant', value=0) for _ in
-                                    o['attention_mask2']])
-
+        for k,v in o.items():
+            pad_val = tokenizer.pad_token_id if 'label' in k else -100
+            o[k] = torch.stack(
+                [F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in v])
         return o
 
 

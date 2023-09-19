@@ -1,6 +1,8 @@
 # @Time    : 2023/4/19 23:03
 # @Author  : tk
 # @FileName: train.py
+import copy
+
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
 from deep_training.trainer.pl.modelcheckpoint import ModelCheckpointEx
@@ -66,11 +68,14 @@ if __name__ == '__main__':
         precision=precision,# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
+
+    dpo_args = dict(beta=0.1, ref_free=False)
     transformer_args = dict(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
-                           quantization_config=global_args["quantization_config"],
-                           device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
-                           torch_dtype=torch.float16,
-                           new_num_tokens=len(tokenizer),  # 可能扩充词
+                            quantization_config=global_args["quantization_config"],
+                            device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
+                            torch_dtype=torch.float16,
+                            new_num_tokens=len(tokenizer),  # 可能扩充词
+                            **dpo_args
                            )
     # 移除device_map
     if global_args["quantization_config"] is None:
@@ -78,6 +83,12 @@ if __name__ == '__main__':
 
 
     pl_model = MyTransformerDPO(**transformer_args)
+
+    pl_ref_model = copy.deepcopy(pl_model)
+    pl_ref_model = pl_ref_model.eval().half()
+    pl_ref_model.requires_grad_(False)
+
+    pl_model.backbone.set_ref_model(pl_ref_model)
 
     config.save_pretrained(output_weight_dir)
 
