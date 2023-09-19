@@ -38,8 +38,15 @@ class TokenIds:
     def trunction_ids(cls,a_ids: typing.List,b_ids: typing.List,max_seq_length,mode='left',a_min_length=10):
         assert a_min_length < max_seq_length
         a_len = max(a_min_length,max_seq_length - len(b_ids))
-        ids = a_ids[:a_len] + b_ids if mode == 'left' else a_ids+ b_ids
+        ids = a_ids[:a_len] + b_ids if mode == 'left' else a_ids + b_ids
         return ids[:max_seq_length]
+    @classmethod
+    def get_prompt_length(cls,a_ids,b_ids):
+        l = min(len(a_ids), len(b_ids))
+        mask: np.ndarray = a_ids[:l] == b_ids[:l]
+        if mask.all():
+            return l
+        return mask.tolist().index(0)
 
     @classmethod
     def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int):
@@ -65,8 +72,8 @@ class TokenIds:
             if np.all(input_ids_a == input_ids_b):
                 return None
         a_ids = np.asarray(a_ids,dtype=np.int32)
-        pos_a = (input_ids_a == a_ids).tolist().index(0)
-        pos_b = (input_ids_b == a_ids).tolist().index(0)
+        pos_a = cls.get_prompt_length(a_ids,input_ids_a)
+        pos_b = cls.get_prompt_length(a_ids,input_ids_b)
         assert pos_a >= 0 and pos_a < max_seq_length -1 and pos_b >= 0 and pos_b < max_seq_length -1
         return {
             "input_ids": input_ids_a,
