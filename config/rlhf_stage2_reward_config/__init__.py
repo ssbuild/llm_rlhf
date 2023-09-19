@@ -3,6 +3,6 @@
 # @Author: tk
 # @File：__init__.py
 
-from config.reward_config.main import *
+from config.rlhf_stage2_reward_config.main import *
 
 

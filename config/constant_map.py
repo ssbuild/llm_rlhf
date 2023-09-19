@@ -16,6 +16,13 @@ train_info_models = {
         'config_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7/config.json',
         'tokenizer_name': '/data/nlp/pre_models/torch/bloom/bloom-1b7',
     },
+    'opt-125m': {
+        'model_type': 'opt',
+        'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-125m',
+        'config_name': '/data/nlp/pre_models/torch/opt/opt-125m/config.json',
+        'tokenizer_name': '/data/nlp/pre_models/torch/opt/opt-125m',
+    },
+
     'opt-350m': {
         'model_type': 'opt',
         'model_name_or_path': '/data/nlp/pre_models/torch/opt/opt-350m',

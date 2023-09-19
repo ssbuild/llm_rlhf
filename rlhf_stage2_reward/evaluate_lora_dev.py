@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-# @Time    : 2023/5/17 11:36
+# @Time    : 2023/5/17 14:26
 import sys
 sys.path.append('..')
 
-import os
+import json
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments
+from tqdm import tqdm
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper
@@ -13,11 +14,11 @@ from aigc_zoo.model_zoo.llm.reward_model import MyRewardTransformer,PetlArgument
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, DataArguments))
-    model_args, data_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
+    parser = HfArgumentParser((ModelArguments,))
+    model_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
 
     tokenizer : PreTrainedTokenizer
-    dataHelper = NN_DataHelper(model_args, None, data_args)
+    dataHelper = NN_DataHelper(model_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
     ckpt_dir = './best_ckpt'
@@ -37,31 +38,34 @@ if __name__ == '__main__':
                                    # # device_map="auto",
                                    # device_map={"": 0},
                                    )
-    # 加载sft权重
+    # 加载lora权重
     pl_model.load_sft_weight(ckpt_dir)
-
-    pl_model.eval().half().cuda()
-
-    enable_merge_weight = False
-
-    if enable_merge_weight:
-        # 合并lora 权重 保存
-        pl_model.save_sft_weight(os.path.join(ckpt_dir, 'pytorch_model_merge.bin'),merge_lora_weight=True)
+    if getattr(pl_model.get_llm_model(), "is_loaded_in_8bit", False):
+        pl_model.eval().cuda()
     else:
+        pl_model.eval().half().cuda()
+    pl_model.requires_grad_(False)
 
-        pl_model.requires_grad_(False)
 
+    with open('./data/eval.json',mode='r',encoding='utf-8') as f:
+        lines = f.readlines()
+    print('predict........')
+    acc = 0
+    total = 0
+    for line in tqdm(lines,total=len(lines)):
+        jd = json.loads(line)
+        if not jd:
+            continue
         input_list = [
-            "\n\nHuman:如何培养土豆\n\nAssistant:土豆生长在地下,然后发送的干子称为花生,这些花生成长为我们熟悉的土豆。",
-            "\n\nHuman:如何培养土豆\n\nAssistant:土豆在地下生长成大、坚固的花生,一旦土豆长大了,它们就生长在地上。",
-            "\n\nHuman:火柴是怎样制造的?\n\nAssistant:我猜你问我如何制造某些东西,但我们以前从未真正讨论过制造的细节。",
-            "\n\nHuman:火柴是怎样制造的?\n\nAssistant:对不起,我担心我不明白你的问题。",
+            jd['prompt'][:256] + jd['chosen'][:256],
+            jd['prompt'][:256] + jd['rejected'][:256],
         ]
-        input_list = [_[:256] for _ in input_list]
         tokend = tokenizer(input_list,padding=True,truncation=True,max_length=512)
         input_ids = torch.tensor(tokend["input_ids"],dtype=torch.int32).to(pl_model.device)
         output = pl_model.backbone.compute_loss(input_ids=input_ids)
         _,scores = output
+        total += 1
+        if scores[0] >= scores[1]:
+           acc += 1
 
-        for text,score in zip(input_list,scores):
-            print('score:' ,score, "text ",text.replace('\n',''))
+    print('total {} , acc count {} , acc {}'.format(total,acc, acc / total))

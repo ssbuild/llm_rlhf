@@ -46,7 +46,7 @@ if 'rwkv' in train_info_args['tokenizer_name'].lower():
 
 
 
-def get_deepspeed_config():
+def get_deepspeed_config(precision='fp16'):
     '''
         lora prompt finetuning 使用 deepspeed_offload.json
         普通finetuning 使用deepspeed.json
@@ -54,7 +54,7 @@ def get_deepspeed_config():
     # 是否开启deepspeed
     if not enable_deepspeed:
         return None
-
+    precision = str(precision).lower()
     # 选择 deepspeed 配置文件
     is_need_update_config = False
     if enable_lora:
@@ -76,4 +76,16 @@ def get_deepspeed_config():
             optimizer['params']['eps'] = train_info_args.get('adam_epsilon', 1e-8)
             # deepspeed_offload 优化器有效
             train_info_args['optimizer'] = optimizer['type']
+
+    if precision == 'bf16':
+        if 'fp16' in deepspeed_config:
+            deepspeed_config["fp16"]["enbale"] = False
+        if 'bf16' in deepspeed_config:
+            deepspeed_config["bf16"]["enbale"] = True
+        else:
+            deepspeed_config['bf16'] = {"enbale": True}
+    elif precision == 'fp16':
+        if 'bf16' in deepspeed_config:
+            deepspeed_config["bf16"]["enbale"] = False
+
     return deepspeed_config

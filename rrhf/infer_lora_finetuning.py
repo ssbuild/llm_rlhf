@@ -11,11 +11,11 @@ from aigc_zoo.model_zoo.llm.rrhf_model import MyRRHFTransformer,PetlArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, DataArguments))
+    parser = HfArgumentParser((ModelArguments,))
     model_args, data_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
 
     tokenizer : PreTrainedTokenizer
-    dataHelper = NN_DataHelper(model_args, None, data_args)
+    dataHelper = NN_DataHelper(model_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
     ckpt_dir = './best_ckpt'

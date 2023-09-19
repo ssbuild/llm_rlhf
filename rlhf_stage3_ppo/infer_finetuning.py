@@ -9,7 +9,7 @@ from transformers import HfArgumentParser,AutoConfig
 from data_utils import train_info_args, NN_DataHelper
 from aigc_zoo.model_zoo.llm.ppo_model import MyPPOTransformer
 from aigc_zoo.utils.llm_generate import Generate
-from config.ppo_config import get_deepspeed_config
+from config.rlhf_stage3_ppo_config import get_deepspeed_config
 
 
 deep_config = get_deepspeed_config()
