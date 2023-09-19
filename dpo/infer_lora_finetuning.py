@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/5/17 11:36
 import sys
+
+from aigc_zoo.utils.llm_generate import Generate
+
 sys.path.append('..')
 
 import os
@@ -12,11 +15,11 @@ from aigc_zoo.model_zoo.llm.dpo_model import MyTransformerDPO,PetlArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
-    parser = HfArgumentParser((ModelArguments, DataArguments))
+    parser = HfArgumentParser((ModelArguments, ))
     model_args, data_args = parser.parse_dict(train_info_args,allow_extra_keys=True)
 
     tokenizer : PreTrainedTokenizer
-    dataHelper = NN_DataHelper(model_args, None, data_args)
+    dataHelper = NN_DataHelper(model_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
     ckpt_dir = './best_ckpt'
@@ -49,18 +52,15 @@ if __name__ == '__main__':
     else:
 
         pl_model.requires_grad_(False)
+        model = pl_model.get_llm_model()
 
-        input_list = [
-            "\n\nHuman:如何培养土豆\n\nAssistant:土豆生长在地下,然后发送的干子称为花生,这些花生成长为我们熟悉的土豆。",
-            "\n\nHuman:如何培养土豆\n\nAssistant:土豆在地下生长成大、坚固的花生,一旦土豆长大了,它们就生长在地上。",
-            "\n\nHuman:火柴是怎样制造的?\n\nAssistant:我猜你问我如何制造某些东西,但我们以前从未真正讨论过制造的细节。",
-            "\n\nHuman:火柴是怎样制造的?\n\nAssistant:对不起,我担心我不明白你的问题。",
-        ]
-        input_list = [_[:256] for _ in input_list]
-        tokend = tokenizer(input_list,padding=True,truncation=True,max_length=512)
-        input_ids = torch.tensor(tokend["input_ids"],dtype=torch.int32).to(pl_model.device)
-        output = pl_model.backbone.compute_loss(input_ids=input_ids)
-        _,scores = output
-
-        for text,score in zip(input_list,scores):
-            print('score:' ,score, "text ",text.replace('\n',''))
+        text_list = ["写一个诗歌，关于冬天",
+                     "晚上睡不着应该怎么办",
+                     "从南京到上海的路线",
+                     ]
+        for input in text_list:
+            response = Generate.generate(model, query=input, tokenizer=tokenizer, max_length=512,
+                                         eos_token_id=config.eos_token_id,
+                                         do_sample=False, top_p=0.7, temperature=0.95, )
+            print('input', input)
+            print('output', response)
