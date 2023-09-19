@@ -7,7 +7,6 @@
 - [deep_training](https://github.com/ssbuild/deep_training)
 
 ```text
-    09-19 增加 dpo https://arxiv.org/pdf/2305.18290.pdf
     06-13 fix llama resize_token_embeddings
     06-01 支持lora deepspeed 训练，0.1.9 和 0.1.10合并
     05-27 add qlora transformers>=4.30
