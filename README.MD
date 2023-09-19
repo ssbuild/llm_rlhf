@@ -7,24 +7,16 @@
 - [deep_training](https://github.com/ssbuild/deep_training)
 
 ```text
-    09-19 增加 dpo 强化训练
+    09-19 增加 dpo https://arxiv.org/pdf/2305.18290.pdf
     06-13 fix llama resize_token_embeddings
     06-01 支持lora deepspeed 训练，0.1.9 和 0.1.10合并
     05-27 add qlora transformers>=4.30
 ```
 
 ## install
-    llama 词典等下载地址 https://huggingface.co/hf-internal-testing/llama-tokenizer
     python >= 3.10
   - pip install -U -r requirements.txt
   - 如果无法安装，可以切换官方源 pip install -i https://pypi.org/simple -U -r requirements.txt
-
-
-
-
-
-    
-
 
 ## weigtht select one is suitable for you
 支持且不限于以下权重
