@@ -2,8 +2,7 @@
 # @Time    : 2023/5/17 11:36
 import sys
 sys.path.append('..')
-from config.rlhf_stage2_reward_config import get_deepspeed_config
-
+from config.dpo_config import get_deepspeed_config
 import torch
 from deep_training.data_helper import ModelArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer

@@ -4,7 +4,7 @@
 # @FileName: reward_config
 from config.constant_map import train_info_models
 
-train_model_config = train_info_models['opt-350m']
+train_model_config = train_info_models['bloom-560m']
 
 
 global_args = {
