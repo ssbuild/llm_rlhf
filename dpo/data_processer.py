@@ -75,13 +75,15 @@ class TokenIds:
         pos_a = cls.get_prompt_length(a_ids,input_ids_a)
         pos_b = cls.get_prompt_length(a_ids,input_ids_b)
         assert pos_a >= 0 and pos_a < max_seq_length -1 and pos_b >= 0 and pos_b < max_seq_length -1
+        labels = np.asarray([-100] * pos_a + input_ids_a[pos_a:].tolist(),dtype=np.int64)
+        labels2 = np.asarray([-100] * pos_b + input_ids_b[pos_b:].tolist(),dtype=np.int64)
         return {
             "input_ids": input_ids_a,
             "attention_mask": attention_mask_a,
-            "labels": np.asarray([-100] * pos_a + input_ids_a[pos_a:].tolist(),dtype=np.int64),
+            "labels": labels,
             # "seqlen": np.asarray(seqlen_a,dtype=np.int32),
             "input_ids2": input_ids_b,
             "attention_mask2": attention_mask_b,
-            "labels2": np.asarray([-100] * pos_b + input_ids_b[pos_b:].tolist(),dtype=np.int64),
+            "labels2": labels2,
             # "seqlen2": np.asarray(seqlen_b, dtype=np.int32),
         }
