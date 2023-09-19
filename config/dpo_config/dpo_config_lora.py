@@ -7,7 +7,7 @@ import torch
 from transformers import BitsAndBytesConfig
 from config.constant_map import train_info_models, train_target_modules_maps
 
-train_model_config = train_info_models['bloom-560m']
+train_model_config = train_info_models['opt-350m']
 
 
 global_args = {

@@ -106,7 +106,7 @@ class NN_DataHelper(DataHelper):
 
         tokenizer: PreTrainedTokenizer = self.tokenizer
         for k,v in o.items():
-            pad_val = tokenizer.pad_token_id if 'label' in k else -100
+            pad_val = tokenizer.pad_token_id if 'label' not in k else -100
             o[k] = torch.stack(
                 [F.pad(_, (0, seqlen - len(_)), mode='constant', value=pad_val) for _ in v])
         return o
